@@ -16,9 +16,11 @@
 struct configuration loadconfiguration()
 {
     char ch;
-    struct configuration config = {};
+    
     FILE *fp;
     char file_name[30] = "/etc/columnar/columnar.cnf";
+    struct configuration config;
+    config.log_file_path = file_name;
 
     printf("Reading the configuration file\n");
     fp = fopen(file_name, "r");
@@ -29,7 +31,7 @@ struct configuration loadconfiguration()
         exit(EXIT_FAILURE);
     }
 
-    printf("The contents of %s file are:\n", file_name);
+    printf("The contents of %s file is:\n", file_name);
 
     while((ch = fgetc(fp)) != EOF)
         printf("%c", ch);
