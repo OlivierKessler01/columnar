@@ -4,7 +4,6 @@
 
 int main()
 {
-    struct configuration config;
-    config = load_configuration();
+    load_configuration();
     return 0;
 }
