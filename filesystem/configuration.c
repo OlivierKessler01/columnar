@@ -12,8 +12,8 @@ void clear_buffer(char buffer[], int number_elements) {
  * Then sets it in the configuration object.
  */
 int set_configuration_parameter(
-        char name_buffer[PARAMETER_NAME_BUFFER_SIZE], 
-        char value_buffer[PARAMETER_VALUE_BUFFER_SIZE], 
+        char name_buffer[PARAMETER_NAME_BUFFER_SIZE],
+        char value_buffer[PARAMETER_VALUE_BUFFER_SIZE],
         struct configuration *config) {
     if(strcmp(name_buffer, "log_file_path") == 0) {
         FILE * log_file_p;
@@ -57,8 +57,10 @@ struct configuration load_configuration()
     char value_buffer[256];
     /* If set to 1, parsing the parameter name, otherwise the parameter value */
     int populate_parameter_name = 1;
-
     struct configuration config;
+
+    clear_buffer(name_buffer, 256);
+    clear_buffer(value_buffer, 256);
 
     printf("Reading the configuration file\n");
     fp = fopen(file_name, "r");
@@ -68,7 +70,7 @@ struct configuration load_configuration()
         perror("Error while opening the file.\n");
         exit(EXIT_FAILURE);
     }
- 
+
     while((ch = fgetc(fp)) != EOF) {
         if(ch == '\n') {
             if(parsing_comment_line == 1) {
