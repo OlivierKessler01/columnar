@@ -53,6 +53,7 @@ struct configuration load_configuration()
     int index_name_buffer = 0;
     int result = 0;
     int index_value_buffer = 0;
+    int parsing_comment_line = 0;
     char value_buffer[256];
     /* If set to 1, parsing the parameter name, otherwise the parameter value */
     int populate_parameter_name = 1;
@@ -67,16 +68,18 @@ struct configuration load_configuration()
         perror("Error while opening the file.\n");
         exit(EXIT_FAILURE);
     }
-
-    printf("The contents of %s file is:\n", file_name);
-
-    
+ 
     while((ch = fgetc(fp)) != EOF) {
         if(ch == '\n') {
-            printf("The value of the parameter is : %s", value_buffer);
-            result = set_configuration_parameter(name_buffer, value_buffer, &config);
-            if(result == 1) {
-                printf("Wrong configuration file formatting.");
+            if(parsing_comment_line == 1) {
+                printf("Stop parsing the comment line.\n");
+                parsing_comment_line = 0;
+            } else {
+                printf("The value of the parameter is : %s\n", value_buffer);
+                result = set_configuration_parameter(name_buffer, value_buffer, &config);
+                if(result == 1) {
+                    printf("Wrong configuration file formatting.\n");
+                }
             }
             clear_buffer(name_buffer, 256);
             clear_buffer(value_buffer, 256);
@@ -84,17 +87,23 @@ struct configuration load_configuration()
             index_name_buffer = 0;
             index_value_buffer = 0;
         } else if(ch == '=') {
-            printf("Parameter with name : %s detected", name_buffer);
+            printf("Parameter with name : %s detected\n", name_buffer);
             populate_parameter_name = 0;
-            index_value_buffer = 0;
+        } else if (ch == '#') {
+            /* If the line starts with a #, it's a comment line */
+            if(index_name_buffer == 0) {
+                printf("Parsing a comment line.\n");
+                parsing_comment_line = 1;
+            }
         } else {
             if(populate_parameter_name == 1) {
                 name_buffer[index_name_buffer] = ch;
+                index_name_buffer++;
             } else {
                 value_buffer[index_value_buffer] = ch;
+                index_value_buffer++;
             }
         }
-        printf("%c", ch);
     }
 
     fclose(fp);
