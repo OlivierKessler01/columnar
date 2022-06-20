@@ -15,6 +15,21 @@ int set_configuration_parameter(
         char name_buffer[PARAMETER_NAME_BUFFER_SIZE], 
         char value_buffer[PARAMETER_VALUE_BUFFER_SIZE], 
         struct configuration *config) {
+    if(strcmp(name_buffer, "log_file_path") == 0) {
+        FILE * log_file_p;
+        log_file_p = fopen(value_buffer, "w");
+
+        if (log_file_p == NULL)
+        {
+            perror("The value provided for log_file_path isn't a writable file.\n");
+            exit(EXIT_FAILURE);
+        } else {
+            config->log_file_path = value_buffer;
+        }
+
+        fclose(log_file_p);
+    }
+
     return 0;
 }
 
@@ -43,7 +58,6 @@ struct configuration load_configuration()
     int populate_parameter_name = 1;
 
     struct configuration config;
-    config.log_file_path = file_name;
 
     printf("Reading the configuration file\n");
     fp = fopen(file_name, "r");
