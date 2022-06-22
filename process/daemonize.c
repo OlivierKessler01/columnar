@@ -15,6 +15,7 @@
 void build_daemon()
 {
     pid_t pid;
+    int x;
 
     /* Fork off the parent process */
     pid = fork();
@@ -60,7 +61,6 @@ void build_daemon()
     close(STDERR_FILENO);
 
     /* Close all open file descriptors */
-    int x;
     for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
     {
         close (x);
