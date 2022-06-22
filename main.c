@@ -17,7 +17,7 @@ int main()
     if (user_log_file == NULL)
     {
         perror("The value provided for log_file_path isn't a writable file.\n");
-        exit(EXIT_FAILURE);
+        exit(1);
     } else {
         fclose(user_log_file);
     }
@@ -35,5 +35,5 @@ int main()
     syslog(LOG_NOTICE, "First daemon terminated.");
     closelog();
 
-    return EXIT_SUCCESS;
+    return 0;
 }
