@@ -12,7 +12,7 @@
 #include <syslog.h>
 #include "daemonize.h"
 
-static void build_daemon()
+void build_daemon()
 {
     pid_t pid;
 

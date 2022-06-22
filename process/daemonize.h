@@ -1,1 +1,1 @@
-static void build_daemon();
+void build_daemon();
