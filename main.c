@@ -7,11 +7,10 @@
 
 int main()
 {
-    configuration_t config = {"", 3307};
+    configuration_t config = {"", DEFAULT_TCP_PORT};
     FILE * user_log_file;
 
     load_configuration(&config);
-    printf("config.log_file_path in main.c : %s\n", config.log_file_path);
     user_log_file = fopen(config.log_file_path, "w");
     /* TODO : write log to the file*/
 
@@ -28,7 +27,7 @@ int main()
     while(1)
     {
         printf("the daemon is running that");
-        /* TODO: Insert daemon code here. */
+        /* TODO: Insert TCP socker listening. */
         syslog(LOG_NOTICE, "First daemon started.");
         break;
     }

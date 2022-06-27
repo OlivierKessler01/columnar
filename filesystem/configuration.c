@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 void clear_buffer(char buffer[], int number_elements) {
     memset(buffer, 0, number_elements);
@@ -29,9 +30,19 @@ int set_configuration_parameter(
         }
 
         fclose(log_file_p);
-    } else if (strcmp(name_buffer, tcp_port) == 0) {
-        /** Filter for invalid values **/
-        config->tcp_port = value_buffer;
+    } else if (strcmp(name_buffer, "tcp_port") == 0) {
+        int length;
+        int i = 0;
+        length = strlen(value_buffer);
+
+        for (i=0;i<length; i++) {
+            if (!isdigit(value_buffer[i]))
+            {
+                perror("The value provided for tcp_port is not an integer.");
+            }
+        }
+
+        config->tcp_port = atoi(value_buffer);
     }
 
     return 0;
