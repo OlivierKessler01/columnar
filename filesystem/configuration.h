@@ -1,8 +1,10 @@
 #define PARAMETER_NAME_BUFFER_SIZE 256
 #define PARAMETER_VALUE_BUFFER_SIZE 256
+#define DEFAULT_TCP_PORT 3307
 
 typedef struct configuration {
     char log_file_path[PARAMETER_VALUE_BUFFER_SIZE];
+    int  tcp_port;
 } configuration_t;
 
 int load_configuration(configuration_t *config);

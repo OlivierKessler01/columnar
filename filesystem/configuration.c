@@ -21,13 +21,17 @@ int set_configuration_parameter(
 
         if (log_file_p == NULL)
         {
-            perror("The value provided for log_file_path isn't a writable file in configuration.c.\n");
+            perror("The value provided for log_file_path"
+            " isn't a writable file in configuration.c.\n");
             exit(EXIT_FAILURE);
         } else {
             strcpy(config->log_file_path, value_buffer);
         }
 
         fclose(log_file_p);
+    } else if (strcmp(name_buffer, tcp_port) == 0) {
+        /** Filter for invalid values **/
+        config->tcp_port = value_buffer;
     }
 
     return 0;

@@ -7,7 +7,7 @@
 
 int main()
 {
-    configuration_t config = {""};
+    configuration_t config = {"", 3307};
     FILE * user_log_file;
 
     load_configuration(&config);
@@ -27,9 +27,9 @@ int main()
     build_daemon();
     while(1)
     {
+        printf("the daemon is running that");
         /* TODO: Insert daemon code here. */
         syslog(LOG_NOTICE, "First daemon started.");
-        sleep(20);
         break;
     }
 
