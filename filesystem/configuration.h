@@ -2,10 +2,10 @@
 #define PARAMETER_VALUE_BUFFER_SIZE 256
 
 typedef struct configuration {
-    char* log_file_path;
+    char log_file_path[PARAMETER_VALUE_BUFFER_SIZE];
 } configuration_t;
 
-struct configuration load_configuration();
+int load_configuration(configuration_t *config);
 
 void clear_buffer(char buffer[], int number_elements);
 

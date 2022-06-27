@@ -14,17 +14,17 @@ void clear_buffer(char buffer[], int number_elements) {
 int set_configuration_parameter(
         char name_buffer[PARAMETER_NAME_BUFFER_SIZE],
         char value_buffer[PARAMETER_VALUE_BUFFER_SIZE],
-        struct configuration *config) {
+        configuration_t *config) {
     if(strcmp(name_buffer, "log_file_path") == 0) {
         FILE * log_file_p;
         log_file_p = fopen(value_buffer, "w");
 
         if (log_file_p == NULL)
         {
-            perror("The value provided for log_file_path isn't a writable file.\n");
+            perror("The value provided for log_file_path isn't a writable file in configuration.c.\n");
             exit(EXIT_FAILURE);
         } else {
-            config->log_file_path = value_buffer;
+            strcpy(config->log_file_path, value_buffer);
         }
 
         fclose(log_file_p);
@@ -44,7 +44,7 @@ int set_configuration_parameter(
  * KEY=VALUE;
  * <EOF>
  */
-struct configuration load_configuration()
+int load_configuration(configuration_t *config)
 {
     char ch;
     FILE *fp;
@@ -57,10 +57,10 @@ struct configuration load_configuration()
     char value_buffer[256];
     /* If set to 1, parsing the parameter name, otherwise the parameter value */
     int populate_parameter_name = 1;
-    struct configuration config;
 
-    clear_buffer(name_buffer, 256);
-    clear_buffer(value_buffer, 256);
+    clear_buffer(name_buffer, PARAMETER_NAME_BUFFER_SIZE);
+    clear_buffer(value_buffer, PARAMETER_VALUE_BUFFER_SIZE);
+    clear_buffer(config->log_file_path, PARAMETER_VALUE_BUFFER_SIZE);
 
     printf("Reading the configuration file\n");
     fp = fopen(file_name, "r");
@@ -78,10 +78,11 @@ struct configuration load_configuration()
                 parsing_comment_line = 0;
             } else {
                 printf("The value of the parameter is : %s\n", value_buffer);
-                result = set_configuration_parameter(name_buffer, value_buffer, &config);
+                result = set_configuration_parameter(name_buffer, value_buffer, config);
                 if(result == 1) {
                     printf("Wrong configuration file formatting.\n");
                 }
+
             }
             clear_buffer(name_buffer, 256);
             clear_buffer(value_buffer, 256);
@@ -109,6 +110,7 @@ struct configuration load_configuration()
     }
 
     fclose(fp);
-    return config;
+
+    return 0;
 }
 

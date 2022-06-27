@@ -7,10 +7,11 @@
 
 int main()
 {
-    struct configuration config;
+    configuration_t config = {""};
     FILE * user_log_file;
 
-    config = load_configuration(); 
+    load_configuration(&config);
+    printf("config.log_file_path in main.c : %s\n", config.log_file_path);
     user_log_file = fopen(config.log_file_path, "w");
     /* TODO : write log to the file*/
 
@@ -21,7 +22,8 @@ int main()
     } else {
         fclose(user_log_file);
     }
-    
+
+    /** Fork the process and close standard filedescriptors, daemonizing the process */
     build_daemon();
     while(1)
     {
