@@ -18,7 +18,7 @@ int set_configuration_parameter(
         configuration_t *config) {
     if(strcmp(name_buffer, "log_file_path") == 0) {
         FILE * log_file_p;
-        log_file_p = fopen(value_buffer, "w");
+        log_file_p = fopen(value_buffer, "a");
 
         if (log_file_p == NULL)
         {
