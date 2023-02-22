@@ -6,15 +6,27 @@ an ANSI SQL compliant API.
 
 ## SQL interpreter structure
 ![Interpreter](interpreter.png)
-### 1. Lexical Analysis
- The goal of lexical analysis is to split the lines into a collecton of elements of types
- variables, numbers, semicolons, equal signs etc.
+### 1. Lexical Analyser
+ The goal of lexical analysis is to split the request into a collecton of elements of various types.
 
-"SELECT A FROM B" => {"SELECT", "A", "FROM", "B"}
+"SELECT A FROM B WHERE B =1;" =>
+{
+    "SELECT": keyword,
+    " ": whitespace,
+    "A": identifier,
+    "FROM": keyword,
+    "B" : identifier,
+    "WHERE": keyword,
+    "B": identifier,
+    " ": whitespace,
+    "=": equal sign,
+    "1": integer,
+    ";": semicolon
+}
 
-### 2. Synthax Analysis
+### 2. Synthax Analyser / Parser
 
-### 3. Semantical Analysis
+### 3. Semantical Analyser
 
 ### 4. Intermediate execution plan generator
  This phase's goal is the generate an execution plan from the elements understood in the previous phases.
