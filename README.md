@@ -5,7 +5,7 @@ It's a little concurrent system whose point is high performance over a single th
 an ANSI SQL compliant API.
 
 ## SQL interpreter structure
-
+![Interpreter](interpreter.png)
 ### 1. Lexical Analysis
  The goal of lexical analysis is to split the lines into a collecton of elements of types
  variables, numbers, semicolons, equal signs etc.
