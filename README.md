@@ -6,23 +6,35 @@ an ANSI SQL compliant API.
 
 ## SQL interpreter structure
 ![Interpreter](interpreter.png)
+
+### Literrature
+
+The understand the following lines, one might want to refer to the "Dragon book" as a compiler reference, and/or
+the Stanford SOE.YCSCS1 Compiler course.
+
 ### 1. Lexical Analyser
  The goal of lexical analysis is to split the request into a collecton of elements of various types.
 
-"SELECT A FROM B WHERE B =1;" =>
+```json
+"SELECT A FROM B WHERE B =1;" :
 {
-    "SELECT": keyword,
-    " ": whitespace,
-    "A": identifier,
-    "FROM": keyword,
-    "B" : identifier,
-    "WHERE": keyword,
-    "B": identifier,
-    " ": whitespace,
-    "=": equal sign,
-    "1": integer,
-    ";": semicolon
+    "<lexeme>: "<token class>",
+    "SELECT": "keyword",
+    " ": "whitespace",
+    "A": "identifier",
+    "FROM": "keyword",
+    "B" : "identifier",
+    "WHERE": "keyword",
+    "B": "identifier",
+    " ": "whitespace",
+    "=": "equal sign",
+    "1": "integer",
+    ";": "semicolon"
 }
+```
+
+To do so, it reads the string from left to right, and uses bounded lookahead. Reservered keywords help minimizing the
+amount of lookahead, but it's still needed in some cases.
 
 ### 2. Synthax Analyser / Parser
 
