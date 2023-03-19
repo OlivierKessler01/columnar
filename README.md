@@ -36,6 +36,8 @@ the Stanford SOE.YCSCS1 Compiler course.
 To do so, it reads the string from left to right, and uses bounded lookahead. Reservered keywords help minimizing the
 amount of lookahead, but it's still needed in some cases.
 
+Each token class has a regular expression.
+
 ### 2. Synthax Analyser / Parser
 
 ### 3. Semantical Analyser
