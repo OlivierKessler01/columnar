@@ -16,11 +16,13 @@ the Stanford SOE.YCSCS1 Compiler course.
  The goal of lexical analysis is to split the request into a collecton of elements of various types.
 
 Example:
-```json
+
 "
     SELECT A FROM B INNER JOIN C ON C.id_b = 3
     WHERE B.test == 10 OR B.test2 == blabla;
 " :
+
+```json
 {
     "<lexeme>: "<token class>",
     "SELECT": "keyword",
@@ -49,7 +51,7 @@ Example:
     " ": "whitespace",
     "B.test": "identifier",
     " ": "whitespace",
-    "==": "equality
+    "==": "equality",
     " ": "whitespace",
     "10": "integer",
     " ": "whitespace",
