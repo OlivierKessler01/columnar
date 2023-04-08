@@ -81,9 +81,9 @@ To architect this Lexer, the following phases have been used :
 - Define the non-deterministic finite automata
 - Deduce the deterministic finte automata
 
-#### **Non-definite automata schema**
+#### **Non-deterministic finite automata schema**
 ![Non-definite automata](lexer-ndfa.drawio.png)
-#### **Definite automata schema**
+#### **Deterministic finite automata schema**
 ![Definite automate](lexer-dfa.drawio.png)
 
 We then store in memory the multi-dimentional array representing the set
