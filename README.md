@@ -5,7 +5,7 @@ It's a little concurrent system whose point is high performance over a single th
 an ANSI SQL compliant API.
 
 ## SQL interpreter structure
-![Interpreter](interpreter.png)
+![Interpreter](interpreter.drawio.png)
 
 ### Literrature
 
@@ -24,7 +24,7 @@ Example:
 
 ```json
 {
-    "<lexeme>: "<token class>",
+    "<lexeme>": "<token class>",
     "SELECT": "keyword",
     " ": "whitespace",
     "A": "identifier",
@@ -81,8 +81,10 @@ To architect this Lexer, the following phases have been used :
 - Define the non-deterministic finite automata
 - Deduce the deterministic finte automata
 
-#Non-deterministic finite automata schema
-#Deterministic finite automata schema
+#### **Non-definite automata schema**
+![Non-definite automata](lexer-ndfa.drawio.png)
+#### **Definite automata schema**
+![Definite automate](lexer-dfa.drawio.png)
 
 We then store in memory the multi-dimentional array representing the set
 of every edge (caracter permitting transition to the next state) and the next
