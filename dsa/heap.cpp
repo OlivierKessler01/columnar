@@ -9,7 +9,6 @@
 
 typedef struct {
     int height;
-    int n;
     std::vector<int> * data;
 } Heap;
 
@@ -20,7 +19,32 @@ Heap* initialize() {
     return &heap;
 }
 
-Heap* heapify(Heap* heap) {
+Heap* max_heapify(Heap* heap, int index) {
+    int largest = index;
+    if(index >= heap.length / 2) {
+        //a leaf node is already the root of a max-heap with level 0
+        return heap;
+    } 
+    int left_index = left_child(index);
+    int right_index = right_child(index);
+    
+    if(heap[left_index] > heap[index]){
+        largest = left_index;
+    }
+
+    if(heap[right_index] > heap[largest]){
+        largest = right_index;
+    }
+
+    if(largest != index){
+        int temp = heap[index];
+        heap[index] = heap[largest];
+        heap[largest] = temp;
+        //recursively call to make the node bubble-down
+        max_heapify(heap, largest)
+    }
+
+    return heap;
 }
 
 bool save_on_disk(Heap*, FILE * fd) {
