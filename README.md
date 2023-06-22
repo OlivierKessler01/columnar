@@ -1,5 +1,5 @@
 # Columnar
-Columnar is a database managment system written in C and following the C90 standard.
+Columnar is a database managment system written in C++.
 
 It's a little concurrent system whose point is high performance over a single thread for data agregation queries using
 an ANSI SQL compliant API.
