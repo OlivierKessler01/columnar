@@ -15,17 +15,19 @@
 #include <math.h>
 #include <stdio.h>
 #include <cassert>
+#include <vector>
+#include <iostream>
 
 typedef struct {
     int height;
-    std::vector<int>* data;
+    std::vector<int> data;
 } Heap;
 
-Heap* initialize() {
+Heap initialize() {
     Heap heap;
     heap.height = 0;
     heap.data = {};
-    return &heap;
+    return heap;
 }
 
 void max_heapify(Heap* heap, int index) {
@@ -58,28 +60,28 @@ void max_heapify(Heap* heap, int index) {
 
 bool test_max_heapify() {
     std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
-    Heap* heap = initialize();
-    heap.data = {-1, 2, 3, 1, 10, 12 , 20 } ;
+    Heap* heap = &initialize();
+    heap->data = {-1, 2, 3, 1, 10, 12 , 20 } ;
     max_heapify(heap, 1);
     
-    for(unsigned int i=0; i < heap.size(); i++){
-        assert(heap->data[i] == expected[i];
+    for(unsigned int i=0; i < heap->data.size(); i++){
+        assert(heap->data[i] == expected[i]);
     }
 
-    return true
+    return true;
 }
 
 bool save_on_disk(Heap*, FILE * fd) {
     return false;
 }
 
-Heap* load_from_disk(FILE *fd) {
+Heap load_from_disk(FILE *fd) {
     Heap heap; 
-    return &heap;
+    return heap;
 }
 
 int parent(int index) {
-    return floor(static_cast<double>(i) / 2);
+    return floor(static_cast<double>(index) / 2);
 }
 
 int right_child(int index) {
