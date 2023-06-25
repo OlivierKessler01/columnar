@@ -30,12 +30,33 @@ Heap initialize() {
     return heap;
 }
 
+bool save_on_disk(Heap*, FILE * fd) {
+    return false;
+}
+
+Heap load_from_disk(FILE *fd) {
+    Heap heap; 
+    return heap;
+}
+
+int parent(int index) {
+    return floor(static_cast<double>(index) / 2);
+}
+
+int right_child(int index) {
+    return 2*index;
+}
+
+int left_child(int index) {
+    return 2*index + 1;
+}
+
 void max_heapify(Heap* heap, int index) {
     assert(index > 0);
     int largest = index;
-    if(index >= heap->data.size() / 2) {
+    if(index >= (int)heap->data.size() / 2) {
         //a leaf node is already the root of a max-heap with level 0
-        return heap;
+        return;
     } 
     int left_index = left_child(index);
     int right_index = right_child(index);
@@ -60,34 +81,14 @@ void max_heapify(Heap* heap, int index) {
 
 bool test_max_heapify() {
     std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
-    Heap* heap = &initialize();
-    heap->data = {-1, 2, 3, 1, 10, 12 , 20 } ;
-    max_heapify(heap, 1);
+    Heap heap;
+    heap.data = {-1, 2, 3, 1, 10, 12 , 20 } ;
+    max_heapify(&heap, 1);
     
-    for(unsigned int i=0; i < heap->data.size(); i++){
-        assert(heap->data[i] == expected[i]);
+    for(unsigned int i=0; i < heap.data.size(); i++){
+        assert(heap.data[i] == expected[i]);
     }
 
     return true;
 }
 
-bool save_on_disk(Heap*, FILE * fd) {
-    return false;
-}
-
-Heap load_from_disk(FILE *fd) {
-    Heap heap; 
-    return heap;
-}
-
-int parent(int index) {
-    return floor(static_cast<double>(index) / 2);
-}
-
-int right_child(int index) {
-    return 2*index;
-}
-
-int left_child(int index) {
-    return 2*index + 1;
-}

@@ -16,8 +16,8 @@ int* merge_sort(int* nums, int numsSize) {
     int middle = round(numsSize / 2);  
     int sorted_nums[numsSize];
 
-    sorted_nums = mergeSort(nums, middle);
-    sorted_nums[middle] = mergeSort(&nums[middle], numsSize - middle);
+    sorted_nums = merge_sort(nums, middle);
+    sorted_nums[middle] = merge_sort(&nums[middle], numsSize - middle);
     
     int temp_index = 0;
     int pointer_1 = 0;
@@ -46,5 +46,5 @@ int* merge_sort(int* nums, int numsSize) {
         temp_index++;
     }
     
-    return &sorted_nums;
+    return sorted_nums;
 }
