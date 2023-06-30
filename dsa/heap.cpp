@@ -17,6 +17,7 @@
 #include <cassert>
 #include <vector>
 #include <iostream>
+#include "vector_utils.h"
 
 typedef struct {
     int height;
@@ -83,7 +84,9 @@ bool test_max_heapify() {
     std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
     Heap heap;
     heap.data = {-1, 2, 3, 1, 10, 12 , 20 } ;
+    printVector(heap.data);
     max_heapify(&heap, 1);
+    printVector(heap.data);
     
     for(unsigned int i=0; i < heap.data.size(); i++){
         assert(heap.data[i] == expected[i]);

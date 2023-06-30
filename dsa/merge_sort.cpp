@@ -1,6 +1,7 @@
 #include <math.h>
 #include <vector>
 #include <iostream>
+#include "vector_utils.h"
 
 using namespace std;
 
@@ -58,13 +59,6 @@ void merge_sort(std::vector<int>& nums) {
 }
 
  
-void printVector(vector<int> A)
-{
-    int size = A.size();
-    for (int i = 0; i < size; i++)
-        cout << A[i] << " ";
-    cout << endl;
-}
  
 // Driver code
 int test()
