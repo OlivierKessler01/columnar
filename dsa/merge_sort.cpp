@@ -1,3 +1,9 @@
+#include <math.h>
+#include <vector>
+#include <iostream>
+
+using namespace std;
+
 /**
  * Merge sorts run in O(nlogn) and Ω(nlogn) for both the worst
  * and average case. Meaning it is asymptotically optimal.
@@ -7,27 +13,31 @@
  */
 
 /** Sorts an array of integer in a non-decreasing order.*/
-int* merge_sort(int* nums, int numsSize) {
-    if(numsSize == 1) {
-        return 0;
+void merge_sort(std::vector<int>& nums) {
+    int numSize = nums.size();
+    if(numSize == 1) {
+        return ;
     }
     
     /* If .5, rounds it to the lower value */
-    int middle = round(numsSize / 2);  
-    int sorted_nums[numsSize];
+    int middle = round(numSize / 2);  
+    std::vector<int> sorted_nums;
 
-    sorted_nums = merge_sort(nums, middle);
-    sorted_nums[middle] = merge_sort(&nums[middle], numsSize - middle);
+    std::vector<int> subvector1 = {nums.begin(), nums.begin() + middle}; 
+    std::vector<int> subvector2 = {nums.begin() + middle, nums.end()}; 
+
+    merge_sort(subvector1);
+    merge_sort(subvector2);
     
     int temp_index = 0;
     int pointer_1 = 0;
     int pointer_2 = middle;
     
-    while (pointer_2 < numsSize || pointer_1 < middle) {        
+    while (pointer_2 < numSize || pointer_1 < middle) {        
         if(pointer_1 >= middle) {
             sorted_nums[temp_index] = nums[pointer_2];
             pointer_2++;
-        } else if(pointer_2 >= numsSize) {
+        } else if(pointer_2 >= numSize) {
             sorted_nums[temp_index] = nums[pointer_1];
             pointer_1++;
         } else if(nums[pointer_1] > nums[pointer_2]) {
@@ -37,7 +47,7 @@ int* merge_sort(int* nums, int numsSize) {
             sorted_nums[temp_index] = nums[pointer_1];
             pointer_1++;
         } else if(nums[pointer_2] == nums[pointer_1]) {
-            temp[temp_index] = nums[pointer_1];
+            sorted_nums[temp_index] = nums[pointer_1];
             temp_index++;
             sorted_nums[temp_index] = nums[pointer_1];
             pointer_1++;
@@ -45,6 +55,26 @@ int* merge_sort(int* nums, int numsSize) {
         }
         temp_index++;
     }
-    
-    return sorted_nums;
+}
+
+ 
+void printVector(vector<int> A)
+{
+    int size = A.size();
+    for (int i = 0; i < size; i++)
+        cout << A[i] << " ";
+    cout << endl;
+}
+ 
+// Driver code
+int test()
+{
+    vector<int> arr = { 12, 11, 13, 5, 6, 7 };
+    cout << "Given array is \n";
+    printVector(arr);
+ 
+    merge_sort(arr);
+    cout << "\nSorted array is \n";
+    printVector(arr);
+    return 0;
 }

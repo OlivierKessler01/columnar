@@ -30,14 +30,14 @@ Heap initialize() {
     return heap;
 }
 
-bool save_on_disk(Heap*, FILE * fd) {
-    return false;
-}
-
-Heap load_from_disk(FILE *fd) {
-    Heap heap; 
-    return heap;
-}
+//bool save_on_disk(Heap*, FILE * fd) {
+//    return false;
+//}
+//
+//Heap load_from_disk(FILE *fd) {
+//    Heap heap; 
+//    return heap;
+//}
 
 int parent(int index) {
     return floor(static_cast<double>(index) / 2);
