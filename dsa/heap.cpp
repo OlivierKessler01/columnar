@@ -53,6 +53,10 @@ int left_child(int index) {
 }
 
 void max_heapify(Heap* heap, int index) {
+    /**
+     * Make a node bubble down until its two children are both 
+     * smaller than him
+     */
     assert(index > 0);
     int largest = index;
     if(index >= (int)heap->data.size() / 2) {
@@ -79,13 +83,28 @@ void max_heapify(Heap* heap, int index) {
     }
 }
 
+Heap build_max_heap(std::vector<int> v) {
+    /**  
+     * To build a max heap from an unsorted array
+     * start from the last non-leaf node and bubble it down
+     * continue until you bubble down the root node.
+     */
+    int last_nonleaf_node = floor(v.size() / 2) - 1;
+    Heap heap; 
+    heap.data = v;
 
-bool test_max_heapify() {
+    for(int i = last_nonleaf_node; i > -1;i++){
+        max_heapify(&heap, i);   
+    }
+
+    return heap;
+}
+
+
+bool test_build_max_heap() {
     std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
-    Heap heap;
-    heap.data = {-1, 2, 3, 1, 10, 12 , 20 } ;
-    printVector(heap.data);
-    max_heapify(&heap, 1);
+    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 } ;
+    Heap heap = build_max_heap(v, 1);
     printVector(heap.data);
     
     for(unsigned int i=0; i < heap.data.size(); i++){

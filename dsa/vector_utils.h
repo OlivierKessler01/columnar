@@ -1,1 +1,3 @@
-void printVector(vector<int> A);
+
+void printVector(std::vector<int> A);
+
