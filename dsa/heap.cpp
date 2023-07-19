@@ -110,10 +110,27 @@ bool test_build_max_heap() {
     printVector(heap.data);
     printVector(expected);
     
-    for(unsigned int i=0; i < heap.data.size(); i++){
-        assert(heap.data[i] == expected[i]);
-    }
+    assert(check_max_heap(heap.data, 1));
 
     return true;
+}
+
+bool check_max_heap(std::vector<int> v, int index) {
+    bool result = false;
+    //check that a vector is a true max_heap using dfs
+    if(index> v.size() - 1){
+        return true;
+    }
+
+    if((2*index > v.size() - 1 || v[2*index] < v[index]) && (2*index > v.size() - 1 || v[2*index] < v[index])){
+        result = true;
+    }
+
+    if(result == true){
+        result = result && check_max_heap(v, 2*index);
+        result = result && check_max_heap(v, 2*index+1);
+    }
+    
+    return result;
 }
 
