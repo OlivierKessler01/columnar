@@ -43,7 +43,7 @@
 
 int main() 
 {
-    test_max_heapify();
+    test_build_max_heap();
     return 0;
 }
 

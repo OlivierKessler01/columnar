@@ -93,7 +93,7 @@ Heap build_max_heap(std::vector<int> v) {
     Heap heap; 
     heap.data = v;
 
-    for(int i = last_nonleaf_node; i > -1;i++){
+    for(int i = last_nonleaf_node; i > 0;i--){
         max_heapify(&heap, i);   
     }
 
@@ -101,11 +101,14 @@ Heap build_max_heap(std::vector<int> v) {
 }
 
 
+
+
 bool test_build_max_heap() {
     std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
-    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 } ;
-    Heap heap = build_max_heap(v, 1);
+    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
+    Heap heap = build_max_heap(v);
     printVector(heap.data);
+    printVector(expected);
     
     for(unsigned int i=0; i < heap.data.size(); i++){
         assert(heap.data[i] == expected[i]);
