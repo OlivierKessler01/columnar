@@ -45,6 +45,8 @@ void max_heapify(Heap* heap, int index) {
     /**
      * Make a node bubble down until its two children are both 
      * smaller than him
+     * 
+     * Time complexity is O(logn) if the tree is balanced
      */
     assert(index > 0);
     int largest = index;
@@ -79,6 +81,13 @@ Heap build_max_heap(std::vector<int> v) {
      * continue until you bubble down the root node.
      *
      * The give array can't exceed an int in size.
+     *
+     * The heap produced is balanced, thus it's height is logn
+     * Given all the non-leaf nodes will bubble down, thus the number and comparison 
+     * will be 2*logn per non-leaf none.
+     * The total worst case time complexity is going to be O(2nlogn)
+     * which can be simplified to O(nlogn)
+     *
      */
     if(v.size() > std::numeric_limits<int>::max() - 1) {
         throw std::invalid_argument("The vector size can't overlow int");
