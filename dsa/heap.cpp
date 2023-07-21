@@ -85,7 +85,7 @@ void max_heapify(Heap* heap, int index) {
 
 Heap build_max_heap(std::vector<int> v) {
     /**  
-     * To build a max heap from an unsorted array
+     * to build a max heap from an unsorted array
      * start from the last non-leaf node and bubble it down
      * continue until you bubble down the root node.
      */
@@ -101,36 +101,41 @@ Heap build_max_heap(std::vector<int> v) {
 }
 
 
-
-
-bool test_build_max_heap() {
-    std::vector<int> expected = {-1, 3, 12, 1, 10, 2, 20, 22};
-    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
-    Heap heap = build_max_heap(v);
-    printVector(heap.data);
-    printVector(expected);
-    
-    assert(check_max_heap(heap.data, 1));
-
-    return true;
-}
-
-bool check_max_heap(std::vector<int> v, int index) {
+bool check_max_heap_vector(std::vector<int> v, int index) {
     bool result = false;
     //check that a vector is a true max_heap using dfs
-    if(index> v.size() - 1){
+    if(index > v.size() - 1){
         return true;
     }
 
-    if((2*index > v.size() - 1 || v[2*index] < v[index]) && (2*index > v.size() - 1 || v[2*index] < v[index])){
+    int left_child_index = left_child(index);
+    int right_child_index = right_child(index);
+    int has_right_child = right_child_index <=  v.size() - 1;
+    int has_left_child = left_child_index <= v.size() - 1;
+
+    if((!has_right_child || v[right_child(index)] < v[index]) 
+        && 
+        (!has_left_child || v[left_child(index)] < v[index])){
         result = true;
     }
 
     if(result == true){
-        result = result && check_max_heap(v, 2*index);
-        result = result && check_max_heap(v, 2*index+1);
+        result = result && check_max_heap_vector(v, left_child_index);
+        result = result && check_max_heap_vector(v, right_child_index);
     }
     
     return result;
+}
+
+bool check_max_heap(Heap heap) {
+    return check_max_heap_vector(heap.data, 1);
+}
+
+bool test_build_max_heap() {
+    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
+    Heap heap = build_max_heap(v);
+    printVector(heap.data);
+    assert(check_max_heap(heap) == true);
+    return true;
 }
 
