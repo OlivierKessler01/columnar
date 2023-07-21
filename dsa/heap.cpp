@@ -10,10 +10,7 @@
  *               |__L_____|
  * 
  */
-
-#include <stdio.h>
 #include <math.h>
-#include <stdio.h>
 #include <cassert>
 #include <vector>
 #include <iostream>
@@ -31,15 +28,6 @@ Heap initialize() {
     heap.data = {};
     return heap;
 }
-
-//bool save_on_disk(Heap*, FILE * fd) {
-//    return false;
-//}
-//
-//Heap load_from_disk(FILE *fd) {
-//    Heap heap; 
-//    return heap;
-//}
 
 int parent(int index) {
     return floor(static_cast<double>(index) / 2);
@@ -107,11 +95,10 @@ Heap build_max_heap(std::vector<int> v) {
     return heap;
 }
 
-
 bool check_max_heap_vector(std::vector<int> v, int index) {
+    //check that a vector is a true max_heap using dfs
     bool result = false;
     int vec_size = (int)v.size();
-    //check that a vector is a true max_heap using dfs
     if(index > vec_size - 1){
         return true;
     }
@@ -141,9 +128,16 @@ bool check_max_heap(Heap heap) {
 
 bool test_build_max_heap() {
     std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
+    std::vector<int> v3 = {-1, 2, 3, 12, 10, 120 , 20 ,22} ;
+    std::vector<int> v2 = {-1, 21, 3, 81, 10, 12 , 20 ,22} ;
     Heap heap = build_max_heap(v);
-    printVector(heap.data);
+    Heap heap2 = build_max_heap(v2);
+    Heap heap3 = build_max_heap(v3);
+
     assert(check_max_heap(heap) == true);
+    assert(check_max_heap(heap2) == true);
+    assert(check_max_heap(heap3) == true);
+
     return true;
 }
 
