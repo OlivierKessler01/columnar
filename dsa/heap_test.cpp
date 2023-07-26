@@ -1,4 +1,4 @@
-#include "dsa/heap.h"
+#include "heap.h"
 #include <iostream>
 
 int main() 

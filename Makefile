@@ -1,16 +1,20 @@
 columnar: main.cpp filesystem/configuration.cpp
-	g++ -o columnar main.cpp \
-		filesystem/configuration.cpp process/daemonize.cpp dsa/merge_sort.cpp \
-		dsa/heap.cpp dsa/vector_utils.cpp -W -Wall -pedantic
+	g++ -o columnar.o main.cpp \
+		filesystem/configuration.cpp process/daemonize.cpp \
+		-W -Wall -pedantic
 
+test_heap: clean dsa/heap_test.cpp 
+	g++ -o heap_test.o \
+		dsa/heap_test.cpp \
+		dsa/heap.cpp dsa/vector_utils.cpp -W -Wall -pedantic \
+	&& ./heap_test.o
 
-test: heap_test.cpp 
-	g++ -o test \
-		heap_test.cpp \
-		dsa/heap.cpp dsa/vector_utils.cpp -W -Wall -pedantic
+test_heap_sort: clean dsa/sort/heap_sort_test.cpp
+	g++ -o heap_sort_test.o \
+		dsa/sort/heap_sort_test.cpp \
+		dsa/sort/heap_sort.cpp -W -Wall -pedantic \
+	&& ./heap_sort_test.o
 
 clean: 
 	rm -rf *.o
 
-mrproper : clean 
-	rm columnar

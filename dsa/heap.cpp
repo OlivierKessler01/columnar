@@ -15,7 +15,6 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include "vector_utils.h"
 
 typedef struct {
     int height;
@@ -137,11 +136,13 @@ bool check_max_heap(Heap heap) {
 
 bool test_build_max_heap() {
     std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
-    std::vector<int> v3 = {-1, 2, 3, 12, 10, 120 , 20 ,22} ;
+    std::vector<int> v3 = {-1, 211, 3, 12, 10, 120 , 200 ,22} ;
     std::vector<int> v2 = {-1, 21, 3, 81, 10, 12 , 20 ,22} ;
+    std::vector<int> v4 = {-1} ;
     Heap heap = build_max_heap(v);
     Heap heap2 = build_max_heap(v2);
     Heap heap3 = build_max_heap(v3);
+    Heap heap4 = build_max_heap(v4);
 
     assert(check_max_heap(heap) == true);
     assert(check_max_heap(heap2) == true);
