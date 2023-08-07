@@ -12,7 +12,8 @@ test_heap: clean dsa/heap_test.cpp
 test_heap_sort: clean dsa/sort/heap_sort_test.cpp
 	g++ -o heap_sort_test.o \
 		dsa/sort/heap_sort_test.cpp \
-		dsa/sort/heap_sort.cpp -W -Wall -pedantic \
+		dsa/vector_utils.cpp \
+		dsa/sort/heap_sort.cpp dsa/heap.cpp -W -Wall -pedantic \
 	&& ./heap_sort_test.o
 
 clean: 

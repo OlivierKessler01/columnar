@@ -1,2 +1,4 @@
+#include <vector>
 
-void test_heap_sort();
+void heap_sort(std::vector<int> vec);
+
