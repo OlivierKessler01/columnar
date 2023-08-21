@@ -33,11 +33,11 @@ int parent(int index) {
 }
 
 int right_child(int index) {
-    return 2*index;
+    return 2*(index+1);
 }
 
 int left_child(int index) {
-    return 2*index + 1;
+    return 2*(index+1) + 1;
 }
 
 void max_heapify(Heap* heap, int index) {
@@ -73,7 +73,7 @@ void max_heapify(Heap* heap, int index) {
     }
 }
 
-Heap build_max_heap(std::vector<int> v) {
+Heap build_max_heap(std::vector<int> &v) {
     /**  
      * To build a max heap from an unsorted array
      * start from the last non-leaf node and bubble it down
@@ -88,13 +88,15 @@ Heap build_max_heap(std::vector<int> v) {
      * which can be simplified to O(nlogn)
      *
      */
-    if(v.size() > std::numeric_limits<int>::max() - 1) {
+    if(v.size() > std::numeric_limits<int>::max() - 2) {
         throw std::invalid_argument("The vector size can't overlow int");
     }
 
     int last_nonleaf_node = floor(v.size() / 2) - 1;
     Heap heap; 
-    heap.data = v;
+    heap.data = std::vector<int>{};
+    std::copy(v.begin(), v.end(), std::back_inserter(heap.data)); 
+
 
     for(int i = last_nonleaf_node; i > 0;i--){
         max_heapify(&heap, i);   
@@ -135,10 +137,10 @@ bool check_max_heap(Heap heap) {
 }
 
 bool test_build_max_heap() {
-    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
-    std::vector<int> v3 = {-1, 211, 3, 12, 10, 120 , 200 ,22} ;
-    std::vector<int> v2 = {-1, 21, 3, 81, 10, 12 , 20 ,22} ;
-    std::vector<int> v4 = {-1} ;
+    std::vector<int> v = {2, 3, 1, 10, 12 , 20 ,22} ;
+    std::vector<int> v3 = {211, 3, 12, 10, 120 , 200 ,22} ;
+    std::vector<int> v2 = {21, 3, 81, 10, 12 , 20 ,22} ;
+    std::vector<int> v4 = {} ;
     Heap heap = build_max_heap(v);
     Heap heap2 = build_max_heap(v2);
     Heap heap3 = build_max_heap(v3);

@@ -6,7 +6,7 @@
 
 int main() 
 {
-    std::vector<int> v = {-1, 2, 3, 1, 10, 12 , 20 ,22} ;
+    std::vector<int> v = {-10, 288, 3, 1, 10, 12 , 20 ,22} ;
     printVector(v);
     heap_sort(v);
     printVector(v);

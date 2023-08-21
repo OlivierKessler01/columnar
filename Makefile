@@ -4,7 +4,7 @@ columnar:
 		-W -Wall -pedantic
 
 test_heap: clean  
-	g++ -g -c heap_test.cpp -o heap_test.o \
+	g++ -g  -o heap_test.o dsa/heap_test.cpp \
 		dsa/heap.cpp dsa/vector_utils.cpp -W -Wall -pedantic \
 	&& ./heap_test.o
 
