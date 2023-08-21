@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
+#include "vector_utils.h"
 
 typedef struct {
     int height;
@@ -47,7 +48,6 @@ void max_heapify(Heap* heap, int index) {
      * 
      * Time complexity is O(logn) if the tree is balanced
      */
-    assert(index > 0);
     int largest = index;
     if(index >= (int)heap->data.size() / 2) {
         //a leaf node is already the root of a max-heap with level 0
@@ -97,8 +97,11 @@ Heap build_max_heap(std::vector<int> &v) {
     heap.data = std::vector<int>{};
     std::copy(v.begin(), v.end(), std::back_inserter(heap.data)); 
 
-
-    for(int i = last_nonleaf_node; i > 0;i--){
+    for(int i = last_nonleaf_node; i >= 0;i--){
+        std::cout << '\n';
+        std::cout << "tessssss";
+        std::cout << '\n';
+        printVector(heap.data);
         max_heapify(&heap, i);   
     }
 
