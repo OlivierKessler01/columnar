@@ -96,12 +96,10 @@ Heap build_max_heap(std::vector<int> &v) {
         throw std::invalid_argument("The vector size can't overlow int");
     }
 
-    int last_nonleaf_node = floor(v.size() / 2) - 1;
     Heap heap; 
     heap.data = std::vector<int>{};
     std::copy(v.begin(), v.end(), std::back_inserter(heap.data)); 
-
-    for(int i = last_nonleaf_node; i >= 0;i--){
+    for(int i = last_internal_node(&heap); i >= 0;i--){
         max_heapify(&heap, i);   
     }
 
