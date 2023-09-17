@@ -15,12 +15,12 @@
 #include <vector>
 #include <iostream>
 #include <stdexcept>
-#include "vector_utils.h"
+#include "../vector_utils.h"
 
-typedef struct {
+struct Heap {
     int height;
     std::vector<int> data;
-} Heap;
+};
 
 Heap initialize() {
     Heap heap;
