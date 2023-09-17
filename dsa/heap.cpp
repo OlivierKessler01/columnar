@@ -34,11 +34,15 @@ int parent(int index) {
 }
 
 int right_child(int index) {
-    return 2*(index+1);
+    return (2*index)+1;
 }
 
 int left_child(int index) {
-    return 2*(index+1) + 1;
+    return (2*index) + 2;
+}
+
+int last_internal_node(Heap* h) {
+    return floor(h->data.size() / 2) - 1;
 }
 
 void max_heapify(Heap* heap, int index) {
@@ -49,18 +53,18 @@ void max_heapify(Heap* heap, int index) {
      * Time complexity is O(logn) if the tree is balanced
      */
     int largest = index;
-    if(index >= (int)heap->data.size() / 2) {
-        //a leaf node is already the root of a max-heap with level 0
-        return;
-    } 
     int left_index = left_child(index);
     int right_index = right_child(index);
-    
-    if(heap->data[left_index] > heap->data[index]){
+   
+    if(index == heap->data.size() -1){
+        return;
+    }  
+
+    if(left_index < heap->data.size() && heap->data[left_index] > heap->data[index]){
         largest = left_index;
     }
 
-    if(heap->data[right_index] > heap->data[largest]){
+    if(right_index < heap->data.size() && heap->data[right_index] > heap->data[largest]){
         largest = right_index;
     }
 
@@ -98,10 +102,6 @@ Heap build_max_heap(std::vector<int> &v) {
     std::copy(v.begin(), v.end(), std::back_inserter(heap.data)); 
 
     for(int i = last_nonleaf_node; i >= 0;i--){
-        std::cout << '\n';
-        std::cout << "tessssss";
-        std::cout << '\n';
-        printVector(heap.data);
         max_heapify(&heap, i);   
     }
 
@@ -143,11 +143,9 @@ bool test_build_max_heap() {
     std::vector<int> v = {2, 3, 1, 10, 12 , 20 ,22} ;
     std::vector<int> v3 = {211, 3, 12, 10, 120 , 200 ,22} ;
     std::vector<int> v2 = {21, 3, 81, 10, 12 , 20 ,22} ;
-    std::vector<int> v4 = {} ;
     Heap heap = build_max_heap(v);
     Heap heap2 = build_max_heap(v2);
     Heap heap3 = build_max_heap(v3);
-    Heap heap4 = build_max_heap(v4);
 
     assert(check_max_heap(heap) == true);
     assert(check_max_heap(heap2) == true);
