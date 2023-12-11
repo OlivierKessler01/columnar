@@ -16,23 +16,49 @@ struct doubly_node {
     doubly_node* prev;
 };
 
+struct doubly_sentinel {
+    doubly_node* sentinel;
+};
 
-doubly_node make_doubly_list(){
-    doubly_node d = doubly_node{};
+doubly_node* make_doubly_list(){
+    doubly_node* d = new doubly_node{};
     return d;        
 }
 
-doubly_node make_doubly_list_sentinel(){
-    doubly_node d = doubly_node{};
+/**
+ * Makes an empty doubly linked list with sentinel
+ *
+ *  _________________ 
+ * |                 v       
+ *  \__|previous|SENTINEL|next|_
+ *           ____^              |
+ *          /__________________/
+ *
+ */
+doubly_sentinel* make_doubly_ll_sent(){
+    doubly_sentinel* d = new doubly_sentinel{};
+    d->sentinel->satellite = NULL;
+    d->sentinel->next = d->sentinel;
+    d->sentinel->prev = d->sentinel;
     return d;        
 }
 
-singly_node make_singly_list(){
-    singly_node d = singly_node{};
+
+
+void add_head_doubly_ll(void* satellite, doubly_sentinel* ds){
+    doubly_node * node = new doubly_node();
+    node->next = ds->sentinel->next;
+    ds->sentinel->next->prev = node;
+    node->prev = ds->sentinel;
+    ds->sentinel->next = node;
+}
+
+singly_node* make_singly_list(){
+    singly_node* d = new singly_node{};
     return d;        
 }
 
-singly_node make_singly_list_sentinel(){
-    singly_node d = singly_node{};
+singly_node* make_singly_ll_sent(){
+    singly_node* d = new singly_node{};
     return d;        
 }
