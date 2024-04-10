@@ -3,7 +3,9 @@
  * This script daemonizes a process.
  */
 
-#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -12,7 +14,7 @@
 #include <syslog.h>
 #include "daemonize.h"
 
-void build_daemon()
+void build_daemon(std::string log_file_path)
 {
     pid_t pid;
     int x;
@@ -27,6 +29,22 @@ void build_daemon()
     /* Success: Let the parent terminate */
     if (pid > 0)
         exit(EXIT_SUCCESS);
+
+    // Open the file in append mode
+    std::ofstream outputFile(log_file_path, std::ios::app);
+
+    // Check if the file is opened successfully
+    if (!outputFile.is_open()) {
+        std::cerr << "Failed to open the file for appending." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Data to append to the file
+    std::string newData = "Daemon running.";
+
+    // Append data to the file
+    outputFile << newData << std::endl;
+
 
     /* On success: The child process becomes session leader */
     if (setsid() < 0)

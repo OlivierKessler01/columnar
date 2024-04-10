@@ -8,22 +8,11 @@
 int main()
 {
     configuration_t config = {"", DEFAULT_TCP_PORT};
-    FILE * user_log_file;
 
     load_configuration(&config);
-    user_log_file = fopen(config.log_file_path, "w");
-    /* TODO : write log to the file*/
-
-    if (user_log_file == NULL)
-    {
-        perror("The value provided for log_file_path isn't a writable file.\n");
-        exit(1);
-    } else {
-        fclose(user_log_file);
-    }
 
     /** Fork the process and close standard filedescriptors, daemonizing the process */
-    build_daemon();
+    build_daemon(config.log_file_path);
     while(1)
     {
         printf("the daemon is running that");

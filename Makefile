@@ -1,5 +1,5 @@
 columnar:
-	g++ -g -c main.cpp -o columnar.o main.cpp \
+	g++ -g -o columnar.o main.cpp \
 		filesystem/configuration.cpp process/daemonize.cpp \
 		-W -Wall -pedantic
 

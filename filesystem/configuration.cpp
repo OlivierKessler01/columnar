@@ -16,14 +16,15 @@ int set_configuration_parameter(
         char name_buffer[PARAMETER_NAME_BUFFER_SIZE],
         char value_buffer[PARAMETER_VALUE_BUFFER_SIZE],
         configuration_t *config) {
+
     if(strcmp(name_buffer, "log_file_path") == 0) {
         FILE * log_file_p;
         log_file_p = fopen(value_buffer, "a");
 
         if (log_file_p == NULL)
         {
-            perror("The value provided for log_file_path"
-            " isn't a writable file in configuration.c.\n");
+            perror("The value provided for log_file_path in the configuration file"
+            " isn't a writable file.\n");
             exit(EXIT_FAILURE);
         } else {
             strcpy(config->log_file_path, value_buffer);
@@ -82,7 +83,7 @@ int load_configuration(configuration_t *config)
 
     if (fp == NULL)
     {
-        perror("Error while opening the file.\n");
+        perror("Error while opening the file. Please add /etc/columnar/columnar.cnf\n");
         exit(EXIT_FAILURE);
     }
 
