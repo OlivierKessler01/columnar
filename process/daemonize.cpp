@@ -86,4 +86,7 @@ void build_daemon(std::string log_file_path)
 
     /* Create the link to the syslog file */
     openlog ("columnar", LOG_PID, LOG_DAEMON);
+
+    while (true){
+    }
 }
