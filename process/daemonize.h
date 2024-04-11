@@ -9,3 +9,5 @@
 #include <syslog.h>
 
 void build_daemon(std::string log_file_path);
+
+int open_tcp_socket();

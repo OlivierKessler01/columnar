@@ -145,9 +145,9 @@ bool test_build_max_heap() {
     Heap heap2 = build_max_heap(v2);
     Heap heap3 = build_max_heap(v3);
 
-    assert(check_max_heap(heap.data) == true);
-    assert(check_max_heap(heap2.data) == true);
-    assert(check_max_heap(heap3.data) == true);
+    assert(check_max_heap(heap) == true);
+    assert(check_max_heap(heap2) == true);
+    assert(check_max_heap(heap3) == true);
 
     return true;
 }

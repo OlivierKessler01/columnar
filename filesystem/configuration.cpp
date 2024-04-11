@@ -1,8 +1,8 @@
 #include "configuration.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 void clear_buffer(char buffer[], int number_elements) {
     memset(buffer, 0, number_elements);

@@ -7,14 +7,65 @@
 #include <fstream>
 #include <string>
 #include <stdlib.h>
+#include <sys/syslog.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <syslog.h>
 #include "daemonize.h"
+#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <syslog.h>
+#include "../filesystem/configuration.h"
 
-void build_daemon(std::string log_file_path)
+int open_tcp_socket(int port) {
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr;
+    struct sockaddr_in clientAddr;
+    socklen_t clientAddrLen = sizeof(clientAddr);
+
+    // Create a socket
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket < 0) {
+        std::cerr << "Error creating socket" << std::endl;
+        return 1;
+    }
+
+    // Bind the socket to a port
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(port); // Port number
+    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+        syslog(LOG_EMERG, "Error binding socket");
+        return 1;
+    }
+
+    // Listen for incoming connections
+    if (listen(serverSocket, 5) < 0) {
+        syslog(LOG_EMERG, "Error listening on socket");
+        return 1;
+    }
+    std::string message = "Server listening on port "+ std::to_string(port);
+    syslog(LOG_INFO, "%s",message.c_str());
+
+    // Accept incoming connections
+    clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
+    if (clientSocket < 0) {
+        syslog(LOG_EMERG, "Error accepting connection");
+        return 1;
+    }
+    syslog(LOG_INFO, "Client connected");
+
+    // Now you can read/write data on clientSocket as needed
+    // For simplicity, let's just close the connection
+    close(clientSocket);
+    close(serverSocket);
+
+    return 0;
+}
+
+void build_daemon(configuration_t config)
 {
     pid_t pid;
     int x;
@@ -31,7 +82,7 @@ void build_daemon(std::string log_file_path)
         exit(EXIT_SUCCESS);
 
     // Open the file in append mode
-    std::ofstream outputFile(log_file_path, std::ios::app);
+    std::ofstream outputFile(config.log_file_path, std::ios::app);
 
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
@@ -86,7 +137,8 @@ void build_daemon(std::string log_file_path)
 
     /* Create the link to the syslog file */
     openlog ("columnar", LOG_PID, LOG_DAEMON);
-
-    while (true){
-    }
+    
+    open_tcp_socket(config.tcp_port);
 }
+
+
