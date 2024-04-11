@@ -7,7 +7,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <syslog.h>
+#include "../filesystem/configuration.h"
 
-void build_daemon(std::string log_file_path);
+void build_daemon(configuration_t config);
 
 int open_tcp_socket();

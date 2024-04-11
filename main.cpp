@@ -13,12 +13,20 @@ int main()
     load_configuration(&config);
 
     /** Fork the process and close standard filedescriptors, daemonizing the process */
-    build_daemon(config.log_file_path);
+    build_daemon(config);
+
     while(1)
     {
-        printf("the daemon is running that");
-        /* TODO: Insert TCP socker listening. */
-        syslog(LOG_NOTICE, "First daemon started.");
+        std::ofstream outputFile(config.log_file_path, std::ios::app);
+
+        // Check if the file is opened successfully
+        if (!outputFile.is_open()) {
+            std::cerr << "Failed to open the file for appending." << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        // Append data to the file
+        outputFile << "The daemon is running that." << std::endl;
     }
 
     /* Log to the syslog */

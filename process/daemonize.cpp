@@ -50,17 +50,16 @@ int open_tcp_socket(int port) {
     syslog(LOG_INFO, "%s",message.c_str());
 
     // Accept incoming connections
-    clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
-    if (clientSocket < 0) {
-        syslog(LOG_EMERG, "Error accepting connection");
-        return 1;
-    }
-    syslog(LOG_INFO, "Client connected");
+    //clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
+    //if (clientSocket < 0) {
+    //    syslog(LOG_EMERG, "Error accepting connection");
+    //    return 1;
+    //}
+    //syslog(LOG_INFO, "Client connected");
 
-    // Now you can read/write data on clientSocket as needed
     // For simplicity, let's just close the connection
-    close(clientSocket);
-    close(serverSocket);
+    //close(clientSocket);
+    //close(serverSocket);
 
     return 0;
 }
