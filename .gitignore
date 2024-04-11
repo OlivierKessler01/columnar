@@ -3,6 +3,7 @@
 *.out
 .gitignore
 
-columnar
+columnarc
+columnard
 test
 *.o

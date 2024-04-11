@@ -15,18 +15,19 @@ int main()
     /** Fork the process and close standard filedescriptors, daemonizing the process */
     build_daemon(config);
 
+    std::ofstream outputFile(config.log_file_path, std::ios::app);
+
+    // Check if the file is opened successfully
+    if (!outputFile.is_open()) {
+        std::cerr << "Failed to open the file for appending." << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Append data to the file
+    outputFile << "The daemon is running that." << std::endl;
+
     while(1)
     {
-        std::ofstream outputFile(config.log_file_path, std::ios::app);
-
-        // Check if the file is opened successfully
-        if (!outputFile.is_open()) {
-            std::cerr << "Failed to open the file for appending." << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        // Append data to the file
-        outputFile << "The daemon is running that." << std::endl;
     }
 
     /* Log to the syslog */

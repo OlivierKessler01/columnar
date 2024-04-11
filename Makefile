@@ -1,19 +1,21 @@
-columnar:
-	g++ -g -o columnar.o main.cpp \
-		filesystem/configuration.cpp process/daemonize.cpp \
+columnard:
+	g++ -g -o columnard server/main.cpp \
+		server/filesystem/configuration.cpp server/process/daemonize.cpp \
 		-W -Wall -pedantic
+columnarc:
+	g++ -g -o columnarc client/main.cpp -W -Wall -pedantic
 
 test_heap: clean  
-	g++ -g  -o heap_test.o dsa/heap/heap_test.cpp \
-		dsa/heap/heap.cpp dsa/vector_utils.cpp -W -Wall -pedantic \
-	&& ./heap_test.o
+	g++ -g  -o heap_test server/dsa/heap/heap_test.cpp \
+		server/dsa/heap/heap.cpp server/dsa/vector_utils.cpp -W -Wall -pedantic \
+	&& ./heap_test
 
 test_heap_sort: clean 
-	g++ -g -o heap_sort_test.o \
-		dsa/sort/heap_sort_test.cpp \
-		dsa/vector_utils.cpp \
-		dsa/sort/heap_sort.cpp dsa/heap/heap.cpp -W -Wall -pedantic \
-	&& ./heap_sort_test.o
+	g++ -g -o heap_sort_test \
+		server/dsa/sort/heap_sort_test.cpp \
+		server/dsa/vector_utils.cpp \
+		server/dsa/sort/heap_sort.cpp server/dsa/heap/heap.cpp -W -Wall -pedantic \
+	&& ./heap_sort_test
 
 clean: 
 	rm -rf *.o
