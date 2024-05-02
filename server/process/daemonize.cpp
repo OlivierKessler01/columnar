@@ -59,7 +59,7 @@ static int open_tcp_socket(int port) {
     return 0;
 }
 
-static void build_daemon(configuration_t config)
+void build_daemon(configuration_t config)
 {
     pid_t pid;
     int x;
@@ -89,6 +89,8 @@ static void build_daemon(configuration_t config)
 
     // Append data to the file
     outputFile << newData << std::endl;
+    /* Create the link to the syslog file */
+    openlog ("columnar", LOG_PID, LOG_DAEMON);
     syslog(LOG_INFO, "%s", newData.c_str());
 
 
@@ -130,9 +132,6 @@ static void build_daemon(configuration_t config)
         close (x);
     }
 
-    /* Create the link to the syslog file */
-    openlog ("columnar", LOG_PID, LOG_DAEMON);
-    
     open_tcp_socket(config.tcp_port);
 }
 

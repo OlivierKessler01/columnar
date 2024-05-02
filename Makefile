@@ -16,6 +16,8 @@ columnarc: build_columnarc
 	killall columnarc
 	./columnarc
 
+tests: test_heap
+
 test_heap: clean  
 	g++ -g  -o heap_test server/dsa/heap/heap_test.cpp \
 		server/dsa/heap/heap.cpp server/dsa/vector_utils.cpp -W -Wall -pedantic \
