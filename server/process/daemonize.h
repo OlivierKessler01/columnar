@@ -13,4 +13,4 @@
 
 void build_daemon(configuration_t config);
 
-int open_tcp_socket();
+static int open_tcp_socket(int port);

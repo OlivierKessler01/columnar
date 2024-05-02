@@ -1,8 +1,3 @@
-/*
- * daemonize.c
- * This script daemonizes a process.
- */
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -19,7 +14,7 @@
 #include <syslog.h>
 #include "../filesystem/configuration.h"
 
-int open_tcp_socket(int port) {
+static int open_tcp_socket(int port) {
     int serverSocket, clientSocket;
     struct sockaddr_in serverAddr;
     struct sockaddr_in clientAddr;
@@ -64,7 +59,7 @@ int open_tcp_socket(int port) {
     return 0;
 }
 
-void build_daemon(configuration_t config)
+static void build_daemon(configuration_t config)
 {
     pid_t pid;
     int x;
