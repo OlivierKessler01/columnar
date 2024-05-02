@@ -1,9 +1,20 @@
-columnard:
+build_columnard:
 	g++ -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp server/process/daemonize.cpp \
 		-W -Wall -pedantic
-columnarc:
+
+.ONESHELL:
+columnard: build_columnard
+	killall columnard
+	./columnard
+
+build_columnarc:
 	g++ -g -o columnarc client/main.cpp -W -Wall -pedantic
+
+.ONESHELL:
+columnarc: build_columnarc
+	killall columnarc
+	./columnarc
 
 test_heap: clean  
 	g++ -g  -o heap_test server/dsa/heap/heap_test.cpp \
@@ -18,5 +29,5 @@ test_heap_sort: clean
 	&& ./heap_sort_test
 
 clean: 
-	rm -rf *.o
+	rm -rf columnarc columnard
 

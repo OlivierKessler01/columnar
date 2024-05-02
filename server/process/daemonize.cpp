@@ -90,10 +90,11 @@ void build_daemon(configuration_t config)
     }
 
     // Data to append to the file
-    std::string newData = "Daemon running.";
+    std::string newData = "Columnar server daemon running.";
 
     // Append data to the file
     outputFile << newData << std::endl;
+    syslog(LOG_INFO, "%s", newData.c_str());
 
 
     /* On success: The child process becomes session leader */
