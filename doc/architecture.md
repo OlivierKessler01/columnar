@@ -3,7 +3,7 @@
 ## SQL interpreter structure
 ![Interpreter](interpreter.drawio.png)
 
-### Literrature
+### Literature
 
 The understand the following lines, one might want to refer to the "Dragon book" as a compiler reference, and/or
 the Stanford SOE.YCSCS1 Compiler course.
@@ -13,10 +13,10 @@ the Stanford SOE.YCSCS1 Compiler course.
 
 Example:
 
-"
+```sql
     SELECT A FROM B INNER JOIN C ON C.id_b = 3
     WHERE B.test == 10 OR B.test2 == blabla;
-" :
+```
 
 ```json
 {
