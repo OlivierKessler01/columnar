@@ -1,12 +1,43 @@
 # Architecture
 
+## Data storage
+
+In a old-school fashion, Columnar stores data mapping table columns to individual files
+on local disk.
+And doesn't use object storage, neither modern file formats like parquet.
+
+Files layout for example table `Country` : 
+| Id File  | 
+| -------- |
+| 1        | 
+| 5        | 
+| 6        |  
+|.METADATA |
+
+| Name file| 
+| -------- |
+| Portugal | 
+| Spain    | 
+| Cuba     |  
+|.METADATA |
+
+| Age file | 
+| -------- |
+| 122      | 
+| 240      | 
+| 1000     |  
+|.METADATA |
+
+
+Index file structure:
+```
+B-tree on disk
+.METADATA_BLOCK
+```
+
+
 ## SQL interpreter structure
 ![Interpreter](interpreter.drawio.png)
-
-### Literature
-
-The understand the following lines, one might want to refer to the "Dragon book" as a compiler reference, and/or
-the Stanford SOE.YCSCS1 Compiler course.
 
 ### 1. Lexical Analyser / Lexer / Tokenizer
  The goal of lexical analysis is to split the request into a collecton of elements of various types.

@@ -4,6 +4,7 @@ Columnar is a database managment system written in C++ with a strong C flavor.
 It's a little concurrent system whose point is high performance over a single
 thread for data agregation queries using an ANSI SQL compliant API.
 
+
 ## Compatibility
 Columnar is only compatible with Linux over x86 patforms at the moment.
 
