@@ -20,13 +20,16 @@ git clone git@github.com:OlivierKessler01/columnar.git
 # Update the configuration file
 vim /etc/columnar/columnar.cnf
 # Compile the source of the server and run it
-make columnard
+make server 
 ```
 
 * Using the client
 ```bash
-make columnarc
-./columnarc host="<>" port="<>" request="SELECT * FROM whatever table;"
+make client 
+./columnarc host="<>" port="<>" 
+#Prompt displays
+> SELECT * FROM whatever table;
+test test test
 ```
 
 # Contributing

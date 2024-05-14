@@ -1,18 +1,18 @@
-build_columnard:
+build_server:
 	g++ -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp server/process/daemonize.cpp \
 		-W -Wall -pedantic
 
 .ONESHELL:
-columnard: build_columnard
+server: build_server
 	killall columnard
 	./columnard
 
-build_columnarc:
+build_client:
 	g++ -g -o columnarc client/main.cpp -W -Wall -pedantic
 
 .ONESHELL:
-columnarc: build_columnarc
+client: build_client
 	killall columnarc
 	./columnarc
 
