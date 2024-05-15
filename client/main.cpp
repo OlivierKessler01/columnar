@@ -52,7 +52,6 @@ int main(int argc, char** argv)
     //   signal(SIGCHLD, child_reap_handler);
     while (1) {
         printf("> ");
-        //TODO assert that MAX_REQ_LEN is not overlowed
         fgets(req, sizeof(req), stdin);
 
         if (strcmp(req,"exit\n") == 0)
