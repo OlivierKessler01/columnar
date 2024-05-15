@@ -31,7 +31,9 @@ static int open_tcp_socket(int port) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htons(port); // Port number
-    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+    if (
+        bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0
+    ) {
         syslog(LOG_EMERG, "Error binding socket");
         return 1;
     }

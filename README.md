@@ -27,7 +27,7 @@ make server
 * Using the client
 ```bash
 make client 
-./columnarc host="<>" port="<>" 
+./columnarc 127.0.0.1 3307
 #Prompt displays
 > SELECT * FROM whatever table;
 test test test

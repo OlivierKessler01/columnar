@@ -12,7 +12,8 @@ int main()
 
     load_configuration(&config);
 
-    /** Fork the process and close standard filedescriptors, daemonizing the process */
+    /** Fork the process and close standard filedescriptors,
+     * daemonizing the process */
     build_daemon(config);
 
     std::ofstream outputFile(config.log_file_path, std::ios::app);
