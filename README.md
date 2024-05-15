@@ -1,9 +1,13 @@
 # Columnar : Yet another columnar store.
+
 Columnar is a database managment system written in C++ with a strong C flavor.
 
-It's a little concurrent system whose point is high performance over a single
-thread for data agregation queries using an ANSI SQL compliant API.
+Columnar offers an ANSI SQL compliant API.
 
+Client side, each request spawns a new process, which initiates a new TCP 
+connection to the server.
+
+Server side, each connection spawns a new process.
 
 ## Compatibility
 Columnar is only compatible with Linux over x86 patforms at the moment.
@@ -39,6 +43,15 @@ This project is open to contributors, especially if you have some experience wit
 # Run the tests
 ```bash
 make tests
+```
+# Run the server + client
+```bash
+make server && make build_client && ./columnarc 127.0.0.1 3307
+```
+
+# Server syslogs
+```bash
+journalctl -f | grep columnar
 ```
 
 # License

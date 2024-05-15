@@ -36,8 +36,6 @@ int sock_connect(char* host, int port)
 
 char* send_request(char* req, int req_len, int client_sock, char* response) {
     send(client_sock, req, req_len, 0);
-    printf("\nRequest sent\n");
     read(client_sock, response, 1024 - 1); // subtract 1 for the null
-    printf("%sResponse : \n", response);
     return response;
 }

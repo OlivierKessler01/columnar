@@ -55,6 +55,9 @@ static int open_tcp_socket(int port) {
             syslog(LOG_EMERG, "Error accept()ing incoming connection");
             exit(-1);
         }
+
+        syslog(LOG_INFO, "Incoming connection on port %d", port);
+        write(accepted_fd, "Ceci vient du server\n", 21);
     }
 
     return 0;
