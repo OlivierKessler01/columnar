@@ -14,49 +14,48 @@
 #include <syslog.h>
 #include "../filesystem/configuration.h"
 
+#define MAX_REQ_LEN 100
+
 static int open_tcp_socket(int port) {
-    int serverSocket, clientSocket;
-    struct sockaddr_in serverAddr;
-    struct sockaddr_in clientAddr;
-    socklen_t clientAddrLen = sizeof(clientAddr);
+    int server_sock, clientSocket;
+    struct sockaddr_in server_addr;
+    socklen_t server_addr_len = sizeof(server_addr);
 
     // Create a socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (serverSocket < 0) {
-        std::cerr << "Error creating socket" << std::endl;
-        return 1;
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_sock < 0) {
+        syslog(LOG_EMERG, "Error creating server socket.");
+        exit(-1);
     }
 
     // Bind the socket to a port
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-    serverAddr.sin_port = htons(port); // Port number
-    if (
-        bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0
-    ) {
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port); // Port number
+    if (bind(
+        server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)
+    ) < 0) {
         syslog(LOG_EMERG, "Error binding socket");
-        return 1;
+        exit(-1);
     }
 
     // Listen for incoming connections
-    if (listen(serverSocket, 5) < 0) {
+    if (listen(server_sock, 5) < 0) {
         syslog(LOG_EMERG, "Error listening on socket");
-        return 1;
+        exit(-1);
     }
-    std::string message = "Server listening on port "+ std::to_string(port);
-    syslog(LOG_INFO, "%s",message.c_str());
-
-    // Accept incoming connections
-    //clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
-    //if (clientSocket < 0) {
-    //    syslog(LOG_EMERG, "Error accepting connection");
-    //    return 1;
-    //}
-    //syslog(LOG_INFO, "Client connected");
-
-    // For simplicity, let's just close the connection
-    //close(clientSocket);
-    //close(serverSocket);
+    syslog(LOG_INFO, "Server listening on port %d", port);
+    
+    int accepted_fd;
+    while (1) {
+        // Accept incoming connections
+        if ((accepted_fd = accept(
+            server_sock, (struct sockaddr *)&server_addr, &server_addr_len)
+        ) < 0) {
+            syslog(LOG_EMERG, "Error accept()ing incoming connection");
+            exit(-1);
+        }
+    }
 
     return 0;
 }

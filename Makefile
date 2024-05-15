@@ -9,7 +9,7 @@ server: build_server
 	./columnard
 
 build_client:
-	g++ -g -o columnarc client/main.cpp -W -Wall -pedantic
+	g++ -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
 
 .ONESHELL:
 client: build_client
