@@ -13,7 +13,8 @@
 #define MAX_HOST_LEN 30
 #define MAX_PORT_LEN 10
 #define DEFAULT_TCP_PORT 3307 
-#define MAX_REQ_LEN 100
+#define MAX_REQ_LEN 10000
+#define DEFAULT_RESP_SIZE 500
 //void child_reap_handler(int sig)
 //{
 //    int pid;
@@ -60,16 +61,14 @@ int main(int argc, char** argv)
         pipe(pipefd);
         if (fork() == 0){
             //In the child process
-            char response[MAX_RESPONSE];
-            
+            char *response = (char*)malloc(sizeof(char)*1);
             //close the read end of the pipe
             close(pipefd[0]);
-            //Add the check that makes sure that THE RESPONSE IS NO MORE THAN
-            //MAX_RESPONSE IN LENGTH !!
             //send the result of the server request to the parent process
             int client_sock = sock_connect(host, port);
             send_request(req, strlen(req), client_sock, response);
             write(pipefd[1], response, strlen(response));
+            free(response);
             // closing the connected socket
             close(client_sock);
             exit(EXIT_SUCCESS);
@@ -78,23 +77,40 @@ int main(int argc, char** argv)
             
             // close the write end of the pipe
             close(pipefd[1]);
-            char buf_resp[MAX_RESPONSE]{0};
+            char *buf_resp = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
+            if(buf_resp == NULL){
+                perror("Malloc failed");
+                
+            }
             int i = 0;
+            char* new_buf;
             char b;
 
             while (read(pipefd[0], &b, 1) > 0){ // read while EOF
+                if(i > DEFAULT_RESP_SIZE -2){
+                    new_buf = (char*)realloc(buf_resp, i+2);
+                    if(new_buf == NULL){
+                        perror("Realloc failed");
+                        free(buf_resp);
+                        free(new_buf);
+                        exit(EXIT_FAILURE);
+                    }
+                }
                 buf_resp[i] = b;
                 i++; 
             }
-            buf_resp[i] = '\n';
 
+            buf_resp[i] = '\n';
             printf("%s\n",buf_resp);
+            free(buf_resp);
+            free(new_buf);
 
             //The parent make sure to reap the child process 
             int pid;
             while((pid = waitpid(-1, NULL, 0)) != -1) {
                 printf("Child with PID %d terminated\n", pid);
             }
+            exit(EXIT_SUCCESS);
         }
     }
 

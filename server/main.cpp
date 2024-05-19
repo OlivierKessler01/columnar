@@ -7,7 +7,7 @@
 int main()
 {
     configuration_t config = {
-        "", DEFAULT_TCP_PORT
+        "", DEFAULT_TCP_PORT, MAX_REQ_LEN
     };
 
     load_configuration(&config);

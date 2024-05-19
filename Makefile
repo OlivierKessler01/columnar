@@ -11,6 +11,9 @@ server: build_server
 build_client:
 	g++ -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
 
+run-dev: server build_client
+	./columnarc 127.0.0.1 3307
+
 .ONESHELL:
 client: build_client
 	killall columnarc
@@ -32,4 +35,7 @@ test_heap_sort: clean
 
 clean: 
 	rm -rf columnarc columnard
+
+log-server:
+	journalctl -f | grep columnar
 

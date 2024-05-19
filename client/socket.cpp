@@ -36,6 +36,35 @@ int sock_connect(char* host, int port)
 
 char* send_request(char* req, int req_len, int client_sock, char* response) {
     send(client_sock, req, req_len, 0);
-    read(client_sock, response, 1024 - 1); // subtract 1 for the null
+    char buffer[500];
+    ssize_t bytes_read;
+    int i = 0;
+    int j = 0;
+    char * new_response;
+    int resp_len = 0;
+
+    while((bytes_read = read(client_sock, buffer, 500)) > 0){
+        resp_len+=bytes_read;
+        new_response = (char*)realloc(response, resp_len);
+        if(new_response == NULL){
+            syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+            free(response);
+            exit(EXIT_FAILURE);
+        }
+        response = new_response;
+
+        for (int i =0; i < bytes_read;i++){
+            response[i+resp_len] = buffer[i];    
+        }
+    }
+    
+    new_response = (char*)realloc(response, resp_len+1);
+    if(new_response == NULL){
+        syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+        free(response);
+        exit(EXIT_FAILURE);
+    }
+    response = new_response;
+    response[j] = '\n';
     return response;
 }

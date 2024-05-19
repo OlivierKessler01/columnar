@@ -46,11 +46,12 @@ make tests
 ```
 # Run the server + client
 ```bash
-make server && make build_client && ./columnarc 127.0.0.1 3307
+make run-dev
 ```
 
 # Server syslogs
 ```bash
+make log-server
 journalctl -f | grep columnar
 ```
 

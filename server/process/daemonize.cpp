@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/syslog.h>
 #include <unistd.h>
 #include <signal.h>
@@ -12,14 +13,33 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <syslog.h>
+#include <string.h>
 #include "../filesystem/configuration.h"
 
-#define MAX_REQ_LEN 100
+#define REQ_BUF_LEN 500
 
-static int open_tcp_socket(int port) {
-    int server_sock, clientSocket;
+static int process_request(int port, int max_req_len) {
+    /**
+     * Function that opens a socket and waits for an incoming request.
+     * When request is intercepted, launchs the query executor.
+      */
+    int server_sock;
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
+    int bytes_read;
+    int new_size;
+    int req_acc_len = 0;
+    char* req_acc;
+    char req_buf[REQ_BUF_LEN];
+    int accepted_fd;
+    char* new_req_acc;
+   
+    //Initialize the string that will contain the request
+    req_acc = (char*)malloc(sizeof(char)*0);
+    if(req_acc == NULL){
+        syslog(LOG_EMERG, "Error malloc'ing for request buffer");
+        exit(EXIT_FAILURE);
+    }
 
     // Create a socket
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -46,7 +66,6 @@ static int open_tcp_socket(int port) {
     }
     syslog(LOG_INFO, "Server listening on port %d", port);
     
-    int accepted_fd;
     while (1) {
         // Accept incoming connections
         if ((accepted_fd = accept(
@@ -57,7 +76,42 @@ static int open_tcp_socket(int port) {
         }
 
         syslog(LOG_INFO, "Incoming connection on port %d", port);
-        write(accepted_fd, "Ceci vient du server\n", 21);
+
+        //Read the incoming request
+        while((bytes_read = read(accepted_fd, req_buf, REQ_BUF_LEN)) > 0){
+            new_size = req_acc_len+bytes_read;
+            if(new_size > max_req_len){
+                char text[100];
+                sprintf(text, "Request too long, max length : %d\n", max_req_len);
+                write(accepted_fd, text, strlen(text));
+            }
+
+            new_req_acc = (char*)realloc(req_acc, new_size);
+            if(new_req_acc == NULL){
+                syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+                free(req_acc);
+                exit(EXIT_FAILURE);
+            }
+
+            req_acc = new_req_acc;
+            for (int i =0; i < bytes_read;i++){
+                req_acc[i+req_acc_len] = req_buf[i];    
+            }
+            req_acc_len=new_size;
+            
+            //The whole request has been transmitted
+            //start the parsing process
+            if(req_acc[req_acc_len -2] == ';'){
+                break; 
+            }
+        }
+
+        syslog(LOG_EMERG, "Received request: %s", req_acc);
+        char* text = (char*)malloc(sizeof(char)*(strlen(req_acc)+8));
+        sprintf(text, "Received request : %s\n", req_acc);
+        write(accepted_fd, text, strlen(req_acc)+8);
+        free(text);
+        close(accepted_fd);
     }
 
     return 0;
@@ -136,7 +190,7 @@ void build_daemon(configuration_t config)
         close (x);
     }
 
-    open_tcp_socket(config.tcp_port);
+    process_request(config.tcp_port, config.max_req_len);
 }
 
 
