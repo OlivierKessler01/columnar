@@ -38,16 +38,15 @@ char* send_request(char* req, int req_len, int client_sock, char* response) {
     send(client_sock, req, req_len, 0);
     char buffer[500];
     ssize_t bytes_read;
-    int i = 0;
-    int j = 0;
     char * new_response;
     int resp_len = 0;
+    int new_resp_len;
 
     while((bytes_read = read(client_sock, buffer, 500)) > 0){
-        resp_len+=bytes_read;
-        new_response = (char*)realloc(response, resp_len);
+        new_resp_len=resp_len+bytes_read;
+        new_response = (char*)realloc(response, new_resp_len);
         if(new_response == NULL){
-            syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+            printf("\nError realloc'ing for response buffer. \n");
             free(response);
             exit(EXIT_FAILURE);
         }
@@ -56,15 +55,16 @@ char* send_request(char* req, int req_len, int client_sock, char* response) {
         for (int i =0; i < bytes_read;i++){
             response[i+resp_len] = buffer[i];    
         }
+        resp_len=new_resp_len;
     }
     
     new_response = (char*)realloc(response, resp_len+1);
     if(new_response == NULL){
-        syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+        printf("\nError realloc'ing for response buffer. \n");
         free(response);
         exit(EXIT_FAILURE);
     }
     response = new_response;
-    response[j] = '\n';
+    response[resp_len] = '\n';
     return response;
 }

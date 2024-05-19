@@ -80,7 +80,6 @@ int main(int argc, char** argv)
             char *buf_resp = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
             if(buf_resp == NULL){
                 perror("Malloc failed");
-                
             }
             int i = 0;
             char* new_buf;

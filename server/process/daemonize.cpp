@@ -78,6 +78,9 @@ static int process_request(int port, int max_req_len) {
         syslog(LOG_INFO, "Incoming connection on port %d", port);
 
         //Read the incoming request
+        //Because when the user types /n, 1 char is transmitted,
+        //we might wan to change >0 by >1
+        //TODO : refactor this
         while((bytes_read = read(accepted_fd, req_buf, REQ_BUF_LEN)) > 0){
             new_size = req_acc_len+bytes_read;
             if(new_size > max_req_len){
@@ -107,10 +110,7 @@ static int process_request(int port, int max_req_len) {
         }
 
         syslog(LOG_EMERG, "Received request: %s", req_acc);
-        char* text = (char*)malloc(sizeof(char)*(strlen(req_acc)+8));
-        sprintf(text, "Received request : %s\n", req_acc);
-        write(accepted_fd, text, strlen(req_acc)+8);
-        free(text);
+        write(accepted_fd, "Response from the server\n", 50);
         close(accepted_fd);
     }
 
