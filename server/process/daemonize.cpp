@@ -18,7 +18,7 @@
 
 #define REQ_BUF_LEN 500
 
-static int process_request(int port, int max_req_len) {
+static int process_request(int port, int max_req_len, char* log_file_path) {
     /**
      * Function that opens a socket and waits for an incoming request.
      * When request is intercepted, launchs the query executor.
@@ -33,6 +33,11 @@ static int process_request(int port, int max_req_len) {
     char req_buf[REQ_BUF_LEN];
     int accepted_fd;
     char* new_req_acc;
+    char* dyn_log_buffer;
+    char log_buffer[50];
+
+    /* Create the link to the syslog file */
+    std::ofstream outputFile(log_file_path, std::ios::app);
    
     //Initialize the string that will contain the request
     req_acc = (char*)malloc(sizeof(char)*0);
@@ -64,7 +69,9 @@ static int process_request(int port, int max_req_len) {
         syslog(LOG_EMERG, "Error listening on socket");
         exit(-1);
     }
-    syslog(LOG_INFO, "Server listening on port %d", port);
+
+    sprintf(log_buffer, "Server listening on port %d\n", port);
+    outputFile << log_buffer << std::endl;
     
     while (1) {
         // Accept incoming connections
@@ -75,8 +82,8 @@ static int process_request(int port, int max_req_len) {
             exit(-1);
         }
 
-        syslog(LOG_INFO, "Incoming connection on port %d", port);
-
+        sprintf(log_buffer, "accept()'d connection on port %d\n", port);
+        outputFile << log_buffer << std::endl;
         //Read the incoming request
         //Because when the user types /n, 1 char is transmitted,
         //we might wan to change >0 by >1
@@ -108,9 +115,14 @@ static int process_request(int port, int max_req_len) {
                 break; 
             }
         }
-
-        syslog(LOG_EMERG, "Received request: %s", req_acc);
-        write(accepted_fd, "Response from the server\n", 50);
+        
+        dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
+        sprintf(dyn_log_buffer, "Received request: \"%s\"\n", new_req_acc);
+        outputFile << dyn_log_buffer << std::endl;
+        
+        //Call the parser
+        //Call the query planner and executor here
+        write(accepted_fd, "Response from the server :).\n", 50);
         close(accepted_fd);
     }
 
@@ -133,12 +145,12 @@ void build_daemon(configuration_t config)
     if (pid > 0)
         exit(EXIT_SUCCESS);
 
-    // Open the file in append mode
+    /* Create the link to the syslog file */
     std::ofstream outputFile(config.log_file_path, std::ios::app);
 
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
-        std::cerr << "Failed to open the file for appending." << std::endl;
+        outputFile << "Failed to open the file for appending." << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -147,8 +159,6 @@ void build_daemon(configuration_t config)
 
     // Append data to the file
     outputFile << newData << std::endl;
-    /* Create the link to the syslog file */
-    openlog ("columnar", LOG_PID, LOG_DAEMON);
     syslog(LOG_INFO, "%s", newData.c_str());
 
 
@@ -190,7 +200,7 @@ void build_daemon(configuration_t config)
         close (x);
     }
 
-    process_request(config.tcp_port, config.max_req_len);
+    process_request(config.tcp_port, config.max_req_len, config.log_file_path);
 }
 
 

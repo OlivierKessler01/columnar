@@ -31,6 +31,9 @@ int main(int argc, char** argv)
     int pipefd[2];
     char host[MAX_HOST_LEN+1] = {0};
     int port;
+    char *buf_response;
+    int i, pid;
+    char b;
     
     if (argc != 3) {
         printf("%s", "The program calling structure should be `columnarc <HOST> <PORT>` .\n");
@@ -49,6 +52,7 @@ int main(int argc, char** argv)
 
     strcpy(host, argv[1]); 
     port = atoi(argv[2]);
+
 
     //   signal(SIGCHLD, child_reap_handler);
     while (1) {
@@ -74,44 +78,38 @@ int main(int argc, char** argv)
             exit(EXIT_SUCCESS);
         } else {
             //In the parent process
-            
+            buf_response = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
+            i = 0;
+            if(buf_response == NULL){
+                perror("Malloc failed");
+                exit(EXIT_FAILURE);
+            }
             // close the write end of the pipe
             close(pipefd[1]);
-            char *buf_resp = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
-            if(buf_resp == NULL){
-                perror("Malloc failed");
-            }
-            int i = 0;
-            char* new_buf;
-            char b;
-
             while (read(pipefd[0], &b, 1) > 0){ // read while EOF
                 if(i > DEFAULT_RESP_SIZE -2){
-                    new_buf = (char*)realloc(buf_resp, i+2);
-                    if(new_buf == NULL){
+                    buf_response = (char*)realloc(buf_response, i+2);
+                    if(buf_response == NULL){
                         perror("Realloc failed");
-                        free(buf_resp);
-                        free(new_buf);
+                        free(buf_response);
                         exit(EXIT_FAILURE);
                     }
                 }
-                buf_resp[i] = b;
+                buf_response[i] = b;
                 i++; 
             }
 
-            buf_resp[i] = '\n';
-            printf("%s\n",buf_resp);
-            free(buf_resp);
-            free(new_buf);
+            buf_response[i] = '\n';
+            printf("%s\n",buf_response);
 
             //The parent make sure to reap the child process 
-            int pid;
             while((pid = waitpid(-1, NULL, 0)) != -1) {
                 printf("Child with PID %d terminated\n", pid);
             }
-            exit(EXIT_SUCCESS);
+
+            free(buf_response);
         }
     }
-
+    
     return 0;
 }
