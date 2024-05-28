@@ -32,19 +32,12 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     char* req_acc;
     char req_buf[REQ_BUF_LEN];
     int accepted_fd;
-    char* new_req_acc;
     char* dyn_log_buffer;
     char log_buffer[50];
 
     /* Create the link to the syslog file */
     std::ofstream outputFile(log_file_path, std::ios::app);
    
-    //Initialize the string that will contain the request
-    req_acc = (char*)malloc(sizeof(char)*0);
-    if(req_acc == NULL){
-        syslog(LOG_EMERG, "Error malloc'ing for request buffer");
-        exit(EXIT_FAILURE);
-    }
 
     // Create a socket
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -70,7 +63,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
         exit(-1);
     }
 
-    sprintf(log_buffer, "Server listening on port %d\n", port);
+    sprintf(log_buffer, "Server listening on port %d", port);
     outputFile << log_buffer << std::endl;
     
     while (1) {
@@ -82,8 +75,16 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             exit(-1);
         }
 
-        sprintf(log_buffer, "accept()'d connection on port %d\n", port);
+        sprintf(log_buffer, "accept()'d connection on port %d", port);
         outputFile << log_buffer << std::endl;
+
+        //Initialize the string that will contain the request
+        req_acc = (char*)malloc(sizeof(char)*0);
+        if(req_acc == NULL){
+            syslog(LOG_EMERG, "Error malloc'ing for request buffer");
+            exit(EXIT_FAILURE);
+        }
+
         //Read the incoming request
         //Because when the user types /n, 1 char is transmitted,
         //we might wan to change >0 by >1
@@ -92,18 +93,17 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             new_size = req_acc_len+bytes_read;
             if(new_size > max_req_len){
                 char text[100];
-                sprintf(text, "Request too long, max length : %d\n", max_req_len);
+                sprintf(text, "Request too long, max length : %d", max_req_len);
                 write(accepted_fd, text, strlen(text));
             }
 
-            new_req_acc = (char*)realloc(req_acc, new_size);
-            if(new_req_acc == NULL){
+            req_acc = (char*)realloc(req_acc, new_size);
+            if(req_acc == NULL){
                 syslog(LOG_EMERG, "Error realloc'ing for request buffer");
                 free(req_acc);
                 exit(EXIT_FAILURE);
             }
 
-            req_acc = new_req_acc;
             for (int i =0; i < bytes_read;i++){
                 req_acc[i+req_acc_len] = req_buf[i];    
             }
@@ -117,11 +117,12 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
         }
         
         dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
-        sprintf(dyn_log_buffer, "Received request: \"%s\"\n", new_req_acc);
+        sprintf(dyn_log_buffer, "Received request: \"%s\"\n", req_acc);
         outputFile << dyn_log_buffer << std::endl;
         
         //Call the parser
         //Call the query planner and executor here
+        free(req_acc);
         write(accepted_fd, "Response from the server :).\n", 50);
         close(accepted_fd);
     }
