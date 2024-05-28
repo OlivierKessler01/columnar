@@ -37,6 +37,11 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
 
     /* Create the link to the syslog file */
     std::ofstream outputFile(log_file_path, std::ios::app);
+    // Check if the file is opened successfully
+    if (!outputFile.is_open()) {
+        syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
+        exit(EXIT_FAILURE);
+    }
    
 
     // Create a socket

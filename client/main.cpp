@@ -16,6 +16,7 @@
 #define MAX_REQ_LEN 10000
 #define DEFAULT_RESP_SIZE 500
 //void child_reap_handler(int sig)
+// TODO: Implement so that when the parent is killed, it reaps the children.
 //{
 //    int pid;
 //    sig++;
@@ -32,7 +33,7 @@ int main(int argc, char** argv)
     char host[MAX_HOST_LEN+1] = {0};
     int port;
     char *buf_response;
-    int i, pid;
+    int i, child_pid;
     char b;
     
     if (argc != 3) {
@@ -103,8 +104,8 @@ int main(int argc, char** argv)
             printf("%s\n",buf_response);
 
             //The parent make sure to reap the child process 
-            while((pid = waitpid(-1, NULL, 0)) != -1) {
-                printf("Child with PID %d terminated\n", pid);
+            while((child_pid = waitpid(-1, NULL, 0)) != -1) {
+                printf("Child with PID %d terminated\n", child_pid);
             }
 
             free(buf_response);
