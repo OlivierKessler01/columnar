@@ -17,6 +17,7 @@
 #define DEFAULT_RESP_SIZE 500
 
 using std::cout, std::endl; 
+
 /**
  * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
  */
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
             }
 
             buf_response[i] = '\n';
-            std::cout << buf_response << std::endl;
+            cout << buf_response << endl;
 
             //The parent make sure to reap the child process 
             while((child_pid = waitpid(-1, NULL, 0)) != -1) {

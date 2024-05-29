@@ -1,20 +1,20 @@
 #include <math.h>
 #include <vector>
 #include <iostream>
-#include "vector_utils.h"
+#include "../vector_utils.h"
 
-using namespace std;
+using std::cout, std::endl, std::vector; 
 
 /**
  * Merge sorts run in O(nlogn) and Ω(nlogn) for both the worst
  * and average case. Meaning it is asymptotically optimal.
  *
- * But it doesn't sort in place, neaning the space complexity is
+ * But it doesn't sort in place, meaning the space complexity is
  * about O(2n) for both the worst and average/expected case.
  */
 
 /** Sorts an array of integer in a non-decreasing order.*/
-void merge_sort(std::vector<int>& nums) {
+void merge_sort(vector<int>& nums) {
     int numSize = nums.size();
     if(numSize == 1) {
         return ;
@@ -22,10 +22,9 @@ void merge_sort(std::vector<int>& nums) {
     
     /* If .5, rounds it to the lower value */
     int middle = round(numSize / 2);  
-    std::vector<int> sorted_nums;
-
-    std::vector<int> subvector1 = {nums.begin(), nums.begin() + middle}; 
-    std::vector<int> subvector2 = {nums.begin() + middle, nums.end()}; 
+    vector<int> sorted_nums;
+    vector<int> subvector1 = {nums.begin(), nums.begin() + middle}; 
+    vector<int> subvector2 = {nums.begin() + middle, nums.end()}; 
 
     merge_sort(subvector1);
     merge_sort(subvector2);
@@ -59,12 +58,11 @@ void merge_sort(std::vector<int>& nums) {
 }
 
  
- 
 // Driver code
 int test()
 {
     vector<int> arr = { 12, 11, 13, 5, 6, 7 };
-    cout << "Given array is \n";
+    cout << "Given array is" << endl;
     printVector(arr);
  
     merge_sort(arr);

@@ -4,15 +4,16 @@
 #include <iostream>
 #include "../vector_utils.h"
 
+using std::cout, std::endl; 
+
 int main() 
 {
-    std::cout << "TESTING HEAP SORT IN NON-DECREASING ORDER : ";
-    std::cout << '\n';
+    cout << "TESTING HEAP SORT IN NON-DECREASING ORDER : " << endl;
     std::vector<int> v = {-10, 288, 3, 1, 10, 12 , 20 ,22} ;
-    std::cout << "INPUT : ";
+    cout << "INPUT : " << endl;
     printVector(v);
     heap_sort(v);
-    std::cout << "RESULT : ";
+    cout << "RESULT : " << endl;
     printVector(v);
 
     for(int i=1; i<(int)v.size(); i++){
