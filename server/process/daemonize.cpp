@@ -30,7 +30,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     int new_size;
     int req_acc_len = 0;
     char* req_acc;
-    char req_buf[REQ_BUF_LEN];
+    char req_buf[REQ_BUF_LEN] = {0};
     int accepted_fd;
     char* dyn_log_buffer;
     char log_buffer[50];
@@ -89,6 +89,8 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             syslog(LOG_EMERG, "Error malloc'ing for request buffer");
             exit(EXIT_FAILURE);
         }
+        req_acc_len = 0;
+        memset(req_buf, 0, strlen(req_buf));
 
         //Read the incoming request
         //Because when the user types /n, 1 char is transmitted,
@@ -116,7 +118,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             
             //The whole request has been transmitted
             //start the parsing process
-            if(req_acc[req_acc_len -2] == ';'){
+            if(req_acc[req_acc_len -1] == '\n'){
                 break; 
             }
         }

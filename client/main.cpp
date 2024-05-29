@@ -1,30 +1,33 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <unistd.h>
-//#include <signal.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <string.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <iostream>
 #include "socket.h" 
 
 #define MAX_RESPONSE 1000
 #define MAX_HOST_LEN 30
 #define MAX_PORT_LEN 10
-#define DEFAULT_TCP_PORT 3307 
 #define MAX_REQ_LEN 10000
 #define DEFAULT_RESP_SIZE 500
-//void child_reap_handler(int sig)
-// TODO: Implement so that when the parent is killed, it reaps the children.
-//{
-//    int pid;
-//    sig++;
-//    while((pid = waitpid(-1, NULL, 0)) != -1) {
-//        printf("Child with PID %d terminated", pid);
-//    }
-//}
 
+using std::cout, std::endl; 
+/**
+ * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
+ */
+void child_reap_handler(int sig)
+{
+    int child_pid;
+    cout << "SIGINT received, waiting for child to terminate." << endl;
+    while((child_pid = waitpid(-1, NULL, 0)) != -1) {
+        cout << "Child with PID " << child_pid << "terminated" << endl;
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -37,7 +40,7 @@ int main(int argc, char** argv)
     char b;
     
     if (argc != 3) {
-        printf("%s", "The program calling structure should be `columnarc <HOST> <PORT>` .\n");
+        cout << "The program calling structure should be `columnarc <HOST> <PORT>`." << endl;
         exit(-1);
     }
 
@@ -53,11 +56,15 @@ int main(int argc, char** argv)
 
     strcpy(host, argv[1]); 
     port = atoi(argv[2]);
+    
+    //Reap the children if the parent receives a SIGINT
+    if (signal(SIGINT, child_reap_handler) == SIG_ERR){
+        perror("Can\'t catch SIGINT");
+        exit(EXIT_FAILURE);
+    }
 
-
-    //   signal(SIGCHLD, child_reap_handler);
     while (1) {
-        printf("> ");
+        cout << "> ";
         fgets(req, sizeof(req), stdin);
 
         if (strcmp(req,"exit\n") == 0)
@@ -101,7 +108,7 @@ int main(int argc, char** argv)
             }
 
             buf_response[i] = '\n';
-            printf("%s\n",buf_response);
+            std::cout << buf_response << std::endl;
 
             //The parent make sure to reap the child process 
             while((child_pid = waitpid(-1, NULL, 0)) != -1) {

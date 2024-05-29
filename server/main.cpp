@@ -3,7 +3,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-int main(int argc, char** argv, char** envp)
+int main(int argc, char** argv)
 {
     configuration_t config = {"", DEFAULT_TCP_PORT, MAX_REQ_LEN};
     load_configuration(&config);
