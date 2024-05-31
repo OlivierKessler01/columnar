@@ -2,7 +2,7 @@ build_server:
 	g++ -std=c++20 -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp \
 		server/lexical_analyzer/analyzer.cpp \
-		server/query/parser/parser.cpp \
+		server/parser/parser.cpp \
 		server/query/runner.cpp \
 		server/process/daemonize.cpp \
 		-W -Wall -pedantic

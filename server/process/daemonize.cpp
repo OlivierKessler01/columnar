@@ -130,7 +130,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
        
         //Run the query (lexe+parser+build query plan+ run query plan)
         int len_response;
-        char * response = run_query(&len_response, req_acc, req_acc_len);
+        char* response = run_query(&len_response, req_acc, req_acc_len);
         free(req_acc);
         write(accepted_fd, response, len_response);
         free(response);
