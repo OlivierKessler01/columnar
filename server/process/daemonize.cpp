@@ -15,6 +15,7 @@
 #include <syslog.h>
 #include <string.h>
 #include "../filesystem/configuration.h"
+#include "../query/runner.h"
 
 #define REQ_BUF_LEN 500
 
@@ -126,11 +127,13 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
         dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
         sprintf(dyn_log_buffer, "Received request: \"%s\"\n", req_acc);
         outputFile << dyn_log_buffer << std::endl;
-        
-        //Call the parser
-        //Call the query planner and executor here
+       
+        //Run the query (lexe+parser+build query plan+ run query plan)
+        int len_response;
+        char * response = run_query(&len_response, req_acc, req_acc_len);
         free(req_acc);
-        write(accepted_fd, "Response from the server :).\n", 50);
+        write(accepted_fd, response, len_response);
+        free(response);
         close(accepted_fd);
     }
 

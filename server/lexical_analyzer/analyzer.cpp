@@ -1,22 +1,29 @@
 #include <iostream>
-#include <regex>
+#include "analyzer.h"
 
-#define KEYWORD_TOKEN_CLASS_REGEXP '/select/from/where/gi'
-#define WHITESPACE_TOKEN_CLASS_REGEXP '/\s/gi'
-#define INTEGER_TOKEN_CLASS_REGEXP '/\d+/gi'
+#define KEYWORD_TOKEN_CLASS_REGEXP "(select)|(from)|(where)"
+#define WHITESPACE_TOKEN_CLASS_REGEXP "\s"
+#define INTEGER_TOKEN_CLASS_REGEXP "0|[1...9][0...9]*"
+#define IDENTIFIER_REGEXP "[a..z]([a..z]|[A...Z]|[0...9])*"
+#define COMMENT_REGEXP "/\* ([a..z]|[A...Z]|[0...9])*  \*/" 
 
 using std::cout, std::endl; 
 
-void analyze(char* string, int stringSize)
+
+/**
+ * Constructs a non-deterministic automaton from a regexp
+ */
+static void thompson_construction(nfa* nfa)
 {
-    for(int i=0; i < stringSize; i++)
-    {
-        std::regex self_regex(KEYWORD_TOKEN_CLASS_REGEXP,
-            std::regex_constants::ECMAScript | std::regex_constants::icase);
-
-        if (std::regex_search(s, self_regex)) {
-            cout << "Text contains the phrase 'regular expressions'" << endl;
-        }
-
-    }
+    cout << "Converting regexp to nfa" << endl;
+    //TODO: parse the regexp and build
 }
+
+int analyze(token* token_arr, char* str, int str_size)
+{
+    nfa* nfa;
+    thompson_construction(nfa);
+    //convert nfa to dfa 
+    return 1;
+}
+
