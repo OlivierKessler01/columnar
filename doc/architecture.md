@@ -39,7 +39,7 @@ B-tree on disk
 ## SQL interpreter structure
 ![Interpreter](interpreter.drawio.png)
 
-### 1. Lexical Analyser / Lexer / Tokenizer
+### 1. Lexical Analyser / Lexer / Tokenizer / Scanner
  The goal of lexical analysis is to split the request into a collecton of elements of various types.
 
 Example:
@@ -104,12 +104,14 @@ The principle of priority ordering is used, meaning if a buffer matches multiple
 the highest priority token class will be declared.
 
 To architect this Lexer, the following phases have been used :
+
 - Define regular expressions for each token class of the language
-- Define the non-deterministic finite automata
-- Deduce the deterministic finte automata
+- Run the Thompson construction to convert the regexp to a non-deterministic finite automaton
+- Convert the NFA to a DFA
 
 #### **Non-deterministic finite automata schema**
 ![Non-definite automata](lexer-ndfa.drawio.png)
+
 #### **Deterministic finite automata schema**
 ![Definite automate](lexer-dfa.drawio.png)
 
@@ -132,3 +134,6 @@ language, thus throw a Synthax Error.
  An execution plan is
 
 ### 5. Execution plan optimizer
+
+### 6. Run the execution plan
+
