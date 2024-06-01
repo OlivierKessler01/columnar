@@ -107,7 +107,7 @@ To architect this Lexer, the following phases have been used :
 
 - Define regular expressions for each token class of the language
 - Run the Thompson construction to convert the regexp to a non-deterministic finite automaton
-- Convert the NFA to a DFA
+- Convert the NFA to DFA using the "subset construction"
 
 #### **Non-deterministic finite automata schema**
 ![Non-definite automata](lexer-ndfa.drawio.png)

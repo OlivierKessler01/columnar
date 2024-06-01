@@ -18,7 +18,7 @@ char* run_query(int *resp_size, char* query, int query_len)
     token* token_arr = NULL;
     int token_arr_len = 0;
     //Run the lexer/scanner
-    token_arr_len = analyze(token_arr, query, query_len);
+    token_arr = analyze(&token_arr_len,query, query_len);
     //Run the parser
     parse(token_arr, token_arr_len);
 

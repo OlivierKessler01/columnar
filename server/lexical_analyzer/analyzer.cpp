@@ -1,29 +1,44 @@
 #include <iostream>
 #include "analyzer.h"
 
-#define KEYWORD_TOKEN_CLASS_REGEXP "(select)|(from)|(where)"
-#define WHITESPACE_TOKEN_CLASS_REGEXP "\s"
-#define INTEGER_TOKEN_CLASS_REGEXP "0|[1...9][0...9]*"
+#define KEYWORD_REGEXP "(select)|(from)|(where)"
+#define WHITESPACE_REGEXP "\s"
+#define INTEGER_REGEXP "0|[1...9][0...9]*"
 #define IDENTIFIER_REGEXP "[a..z]([a..z]|[A...Z]|[0...9])*"
 #define COMMENT_REGEXP "/\* ([a..z]|[A...Z]|[0...9])*  \*/" 
+#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" WHITESPACE_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP "|" COMMENT_REGEXP
 
 using std::cout, std::endl; 
+
 
 
 /**
  * Constructs a non-deterministic automaton from a regexp
  */
-static void thompson_construction(nfa* nfa)
+nfa* thompson_construction()
 {
     cout << "Converting regexp to nfa" << endl;
+    nfa* nfa;
+    return nfa;
     //TODO: parse the regexp and build
 }
 
-int analyze(token* token_arr, char* str, int str_size)
+/**
+ * Constructs a deterministic finite automaton from a non-deterministic finite
+ * automaton.
+ */
+nfa* subset_construction()
 {
-    nfa* nfa;
-    thompson_construction(nfa);
-    //convert nfa to dfa 
-    return 1;
+    cout << "Converting nfa to dfa" << endl;
+    dfa* dfa;
+    return dfa;
+}
+
+token* analyze(int* token_arr_len, char* str, int str_size)
+{
+    nfa* nfa = thompson_construction();
+    dfa * dfa = subset_construction(nfa);
+    token* token_arr = recognize(dfa, str, str_size);
+    return token_arr;
 }
 
