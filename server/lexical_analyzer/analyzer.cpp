@@ -15,7 +15,7 @@ using std::cout, std::endl;
 /**
  * Constructs a non-deterministic automaton from a regexp
  */
-nfa* thompson_construction()
+static nfa* thompson_construction()
 {
     cout << "Converting regexp to nfa" << endl;
     nfa* nfa;
@@ -27,7 +27,7 @@ nfa* thompson_construction()
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
-nfa* subset_construction()
+static dfa* subset_construction(nfa* nfa)
 {
     cout << "Converting nfa to dfa" << endl;
     dfa* dfa;
@@ -38,7 +38,7 @@ token* analyze(int* token_arr_len, char* str, int str_size)
 {
     nfa* nfa = thompson_construction();
     dfa * dfa = subset_construction(nfa);
-    token* token_arr = recognize(dfa, str, str_size);
+    token* token_arr = recognize(token_arr_len, dfa, str, str_size);
     return token_arr;
 }
 
