@@ -1,5 +1,6 @@
 #include "../lexical_analyzer/analyzer.h"
 #include "../parser/parser.h"
+#include <cstddef>
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
@@ -12,15 +13,21 @@ using std::cout, std::endl;
  *
  * Return the response.
  */
-char* run_query(int *resp_size, char* query, int query_len)
+char* run_query(int *resp_size, char* query, ssize_t query_len)
 {
     cout << "in run_query() function" << endl;
-    token* token_arr = NULL;
-    int token_arr_len = 0;
+    token* tokens = NULL;
+    size_t result;
+
     //Run the lexer/scanner
-    token_arr = analyze(&token_arr_len, query, query_len);
+    if ((result_lexer = lexe(&tokens, query, query_len)) == -1) {
+        cout << "Wrong request synthax" << endl;
+    }
+    
     //Run the parser
-    parse(token_arr, token_arr_len);
+    if ((result_parser = parse(&tokens, result_lexer)) == -1) {
+        cout << "Wrong request synthax" << endl;
+    }
 
     //TODO: run the query plan builder
     //TODO: execute the query plan builder

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <sys/types.h>
 typedef struct state {
     char name[20];
 } state;
@@ -42,4 +43,6 @@ typedef struct token {
     synthactic_category category;
 } token;
 
-int analyze(int* token_arr_len, char* str, int str_size);
+int construct_scanner();
+
+size_t lexe(token* tokens, char* str, ssize_t str_size);

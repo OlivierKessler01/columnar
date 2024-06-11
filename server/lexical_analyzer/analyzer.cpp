@@ -1,4 +1,6 @@
+#include <cstddef>
 #include <iostream>
+#include <sys/types.h>
 #include "analyzer.h"
 
 #define KEYWORD_REGEXP "(select)|(from)|(where)"
@@ -11,34 +13,74 @@
 using std::cout, std::endl; 
 
 
-
 /**
  * Constructs a non-deterministic automaton from a regexp
  */
-static nfa* thompson_construction()
+static void thompson_construction(nfa* nfa)
 {
     cout << "Converting regexp to nfa" << endl;
-    nfa* nfa;
-    return nfa;
-    //TODO: parse the regexp and build
+    //TODO: parse the regexp and build NFA
 }
 
 /**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
-static dfa* subset_construction(nfa* nfa)
+static void subset_construction(nfa* nfa, dfa* dfa)
 {
     cout << "Converting nfa to dfa" << endl;
-    dfa* dfa;
-    return dfa;
+    //TODO: Build DFA from NFA
 }
 
-token* analyze(int* token_arr_len, char* str, int str_size)
+/**
+ * minimize_dfa - Remove duplicates states from the dfa using partitionning/segregation
+ */
+static void minimize_dfa(dfa* dfa)
 {
-    nfa* nfa = thompson_construction();
-    dfa * dfa = subset_construction(nfa);
-    token* token_arr = recognize(token_arr_len, dfa, str, str_size);
-    return token_arr;
+    cout << "Minimizing the dfa" << endl;
+    //TODO: Minimize the DFA
 }
+
+/**
+ * generate_scanner_code - Generate the scanner code as a file. 
+ */
+static void generate_scanner_code(dfa* dfa)
+{
+    cout << "Generate scanner C code as a file." << endl;
+    //TODO: Create scanner C file from dfa. 
+}
+
+/**
+ * construct_scanner - Build the SQL scanner. Output is an executable and dynamically
+ * linkeable file.
+ * Run this once offline when modifying the language synthax. Then the file
+ * will be used to lexe/tokenize at runtime.
+ */
+int construct_scanner()
+{
+    nfa* nfa;
+    dfa * dfa;
+    char* code = (char*)malloc(0);
+    thompson_construction(nfa);
+    subset_construction(nfa, dfa);
+    minimize_dfa(dfa);
+    generate_scanner_code(dfa);
+
+    free(code);
+    free(nfa);
+    free(dfa);
+    return 0;
+}
+
+/**
+ * lexe - Given a lexer and a string, returns the tokens.
+ * Returns the length of the token array if string is in the language,
+ * -1 otherwise.
+ */
+size_t lexe(token* tokens, char* str, ssize_t str_size)
+{
+    return -1; //If the string is not in the language
+}
+
+
 

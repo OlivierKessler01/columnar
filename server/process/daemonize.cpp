@@ -56,9 +56,13 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(port); // Port number
-    if (bind(
-        server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)
-    ) < 0) {
+    if (
+        bind(
+            server_sock, 
+            (struct sockaddr *)&server_addr,
+            sizeof(server_addr)
+        ) < 0
+    ) {
         syslog(LOG_EMERG, "Error binding socket");
         exit(-1);
     }
