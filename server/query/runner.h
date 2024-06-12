@@ -1,2 +1,3 @@
+#include <sys/types.h>
 
-char* run_query(int *resp_size, char* query, int query_len);
+ssize_t run_query(char *response, char* query, ssize_t query_len);

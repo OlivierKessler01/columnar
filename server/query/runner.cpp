@@ -13,30 +13,31 @@ using std::cout, std::endl;
  *
  * Return the response.
  */
-char* run_query(int *resp_size, char* query, ssize_t query_len)
+ssize_t run_query(char *response, char* query, ssize_t query_len)
 {
     cout << "in run_query() function" << endl;
     token* tokens = NULL;
-    size_t result;
+    ssize_t len_tokens, result_parser;
 
     //Run the lexer/scanner
-    if ((result_lexer = lexe(&tokens, query, query_len)) == -1) {
-        cout << "Wrong request synthax" << endl;
+    if ((len_tokens = lexe(tokens, query, query_len)) == -1) {
+        cout << "Wrong request synthax." << endl;
+        return -1;
     }
     
     //Run the parser
-    if ((result_parser = parse(&tokens, result_lexer)) == -1) {
-        cout << "Wrong request synthax" << endl;
+    if ((result_parser = parse(tokens, len_tokens)) == -1) {
+        cout << "Wrong request regarding grammar." << endl;
+        return -1;
     }
 
     //TODO: run the query plan builder
     //TODO: execute the query plan builder
 
-    char* response = (char*)malloc(21);
+    response = (char*)malloc(21);
     const char* response_s = "run_query() response";
     strcpy(response, response_s);
-    *resp_size = 21;
-    return response;
+    return 21;
 }
 
 

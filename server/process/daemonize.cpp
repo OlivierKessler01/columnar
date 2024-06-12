@@ -35,6 +35,8 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     int accepted_fd;
     char* dyn_log_buffer;
     char log_buffer[50];
+    int len_response;
+    char* response;
 
     /* Create the link to the syslog file */
     std::ofstream outputFile(log_file_path, std::ios::app);
@@ -133,8 +135,9 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
         outputFile << dyn_log_buffer << std::endl;
        
         //Run the query (lexe+parser+build query plan+ run query plan)
-        int len_response;
-        char* response = run_query(&len_response, req_acc, req_acc_len);
+        if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
+            outputFile << "Query execution failed." << std::endl;
+        }
         free(req_acc);
         write(accepted_fd, response, len_response);
         free(response);
