@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include "daemonize.h"
 #include <unistd.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <syslog.h>
@@ -19,24 +20,37 @@
 
 #define REQ_BUF_LEN 500
 
+using std::cout, std::endl;
+
+/**
+ * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
+ */
+static void child_reap_handler(int sig)
+{
+    int child_pid;
+    cout << "SIGINT" << sig << " received, waiting for child to terminate." << endl;
+    //Potentialy multiple zombies are queued, make sure to reap them all
+    while((child_pid = waitpid(-1, NULL, 0)) != -1) {
+        cout << "Child with PID " << child_pid << "terminated" << endl;
+    }
+}
+
 static int process_request(int port, int max_req_len, char* log_file_path) {
     /**
      * Function that opens a socket and waits for an incoming request.
      * When request is intercepted, launchs the query executor.
       */
-    int server_sock;
+    int listen_fd;
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
     int bytes_read;
     int new_size;
-    int req_acc_len = 0;
-    char* req_acc;
     char req_buf[REQ_BUF_LEN] = {0};
     int accepted_fd;
     char* dyn_log_buffer;
     char log_buffer[50];
-    int len_response;
-    char* response;
+    __pid_t child_pid;
+
 
     /* Create the link to the syslog file */
     std::ofstream outputFile(log_file_path, std::ios::app);
@@ -46,10 +60,15 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
         exit(EXIT_FAILURE);
     }
    
+    //Reap the zombies children if the parent receives a SIGINT
+    if (signal(SIGINT, child_reap_handler) == SIG_ERR){
+        perror("Can\'t catch SIGINT");
+        exit(EXIT_FAILURE);
+    }
 
     // Create a socket
-    server_sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_sock < 0) {
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_fd < 0) {
         syslog(LOG_EMERG, "Error creating server socket.");
         exit(-1);
     }
@@ -60,7 +79,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     server_addr.sin_port = htons(port); // Port number
     if (
         bind(
-            server_sock, 
+            listen_fd, 
             (struct sockaddr *)&server_addr,
             sizeof(server_addr)
         ) < 0
@@ -70,7 +89,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     }
 
     // Listen for incoming connections
-    if (listen(server_sock, 5) < 0) {
+    if (listen(listen_fd, 5) < 0) {
         syslog(LOG_EMERG, "Error listening on socket");
         exit(-1);
     }
@@ -81,67 +100,85 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     while (1) {
         // Accept incoming connections
         if ((accepted_fd = accept(
-            server_sock, (struct sockaddr *)&server_addr, &server_addr_len)
+            listen_fd, (struct sockaddr *)&server_addr, &server_addr_len)
         ) < 0) {
             syslog(LOG_EMERG, "Error accept()ing incoming connection");
             exit(-1);
         }
-
+        
         sprintf(log_buffer, "accept()'d connection on port %d", port);
         outputFile << log_buffer << std::endl;
 
-        //Initialize the string that will contain the request
-        req_acc = (char*)malloc(sizeof(char)*0);
-        if(req_acc == NULL){
-            syslog(LOG_EMERG, "Error malloc'ing for request buffer");
+        //A connection has been accepted, run the query in a child process
+        if ((child_pid = fork()) < 0) {
+            perror("fork");
             exit(EXIT_FAILURE);
         }
-        req_acc_len = 0;
-        memset(req_buf, 0, strlen(req_buf));
+        else if(child_pid == 0)
+        {
+            //In child process 
+            // First, close the listening fd
+            close(listen_fd);
 
-        //Read the incoming request
-        //Because when the user types /n, 1 char is transmitted,
-        //we might wan to change >0 by >1
-        //TODO : refactor this
-        while((bytes_read = read(accepted_fd, req_buf, REQ_BUF_LEN)) > 0){
-            new_size = req_acc_len+bytes_read;
-            if(new_size > max_req_len){
-                char text[100];
-                sprintf(text, "Request too long, max length : %d", max_req_len);
-                write(accepted_fd, text, strlen(text));
-            }
-
-            req_acc = (char*)realloc(req_acc, new_size);
+            //Initialize the string that will contain the request
+            int req_acc_len = 0;
+            char * req_acc = (char*)malloc(sizeof(char)*0);
             if(req_acc == NULL){
-                syslog(LOG_EMERG, "Error realloc'ing for request buffer");
-                free(req_acc);
+                syslog(LOG_EMERG, "Error malloc'ing for request buffer");
                 exit(EXIT_FAILURE);
             }
+            int len_response = 0;
+            char* response = (char*) malloc(0);
 
-            for (int i =0; i < bytes_read;i++){
-                req_acc[i+req_acc_len] = req_buf[i];    
+            //Read the incoming request
+            //Because when the user types /n, 1 char is transmitted,
+            //we might wan to change >0 by >1
+            //TODO : refactor this
+            while((bytes_read = read(accepted_fd, req_buf, REQ_BUF_LEN)) > 0){
+                new_size = req_acc_len+bytes_read;
+                if(new_size > max_req_len){
+                    char text[100];
+                    sprintf(text, "Request too long, max length : %d", max_req_len);
+                    write(accepted_fd, text, strlen(text));
+                }
+
+                req_acc = (char*)realloc(req_acc, new_size);
+                if(req_acc == NULL){
+                    syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+                    free(req_acc);
+                    exit(EXIT_FAILURE);
+                }
+
+                for (int i =0; i < bytes_read;i++){
+                    req_acc[i+req_acc_len] = req_buf[i];    
+                }
+                req_acc_len=new_size;
+                
+                //The whole request has been transmitted
+                //start the parsing process
+                if(req_acc[req_acc_len -1] == '\n'){
+                    break; 
+                }
             }
-            req_acc_len=new_size;
             
-            //The whole request has been transmitted
-            //start the parsing process
-            if(req_acc[req_acc_len -1] == '\n'){
-                break; 
+            dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
+            sprintf(dyn_log_buffer, "Received request: \"%s\"\n", req_acc);
+            outputFile << dyn_log_buffer << std::endl;
+           
+            //Run the query (lexe+parser+build query plan+ run query plan)
+            if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
+                outputFile << "Query execution failed." << std::endl;
             }
+            free(req_acc);
+            free(dyn_log_buffer);
+            write(accepted_fd, response, len_response);
+            free(response);
+            close(accepted_fd);
         }
-        
-        dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
-        sprintf(dyn_log_buffer, "Received request: \"%s\"\n", req_acc);
-        outputFile << dyn_log_buffer << std::endl;
-       
-        //Run the query (lexe+parser+build query plan+ run query plan)
-        if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
-            outputFile << "Query execution failed." << std::endl;
+        else {
+            //In parent process
+            close(accepted_fd);
         }
-        free(req_acc);
-        write(accepted_fd, response, len_response);
-        free(response);
-        close(accepted_fd);
     }
 
     return 0;

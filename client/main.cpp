@@ -21,10 +21,11 @@ using std::cout, std::endl;
 /**
  * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
  */
-void child_reap_handler(int sig)
+static void child_reap_handler(int sig)
 {
     int child_pid;
     cout << "SIGINT received, waiting for child to terminate." << endl;
+    //Potentialy multiple zombies are queued, make sure to reap them all
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
         cout << "Child with PID " << child_pid << "terminated" << endl;
     }

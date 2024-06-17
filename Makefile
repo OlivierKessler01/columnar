@@ -1,4 +1,16 @@
-build_server:
+
+# The @ makes sure that the command itself isn't echoed in the terminal
+help: # Print help on Makefile
+	@echo "Please use 'make <target>' where <target> is one of"
+	@echo ""
+	@grep '^[^.#]\+:\s\+.*#' Makefile | \
+	sed "s/\(.\+\):\s*\(.*\) #\s*\(.*\)/`printf "\033[93m"`  \1`printf "\033[0m"`	\3 [\2]/" | \
+	expand -35
+	@echo ""
+	@echo "Check the Makefile to know exactly what each target is doing."
+
+  
+build_server: clean # Build the server 
 	g++ -std=c++20 -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp \
 		server/lexical_analyzer/analyzer.cpp \
@@ -7,23 +19,25 @@ build_server:
 		server/process/daemonize.cpp \
 		-W -Wall -pedantic
 
+build_client: clean #Build the client
+	g++ -std=c++20 -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
+
 .ONESHELL:
-server: build_server
+.PHONY:
+server: build_server # Build and launch the server
 	killall columnard
 	./columnard
 
-build_client:
-	g++ -std=c++20 -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
-
-run-dev: server build_client
-	./columnarc 127.0.0.1 3307
-
-.ONESHELL:
+.PHONY:
 client: build_client
 	killall columnarc
-	./columnarc
+	./columnarc 127.0.0.1 3307
 
-tests: test_heap
+.PHONY:
+run-dev: server client #Build client and server, then run them
+
+
+tests: test_heap test_heap_sort #Run the test suite
 
 test_heap: clean  
 	g++ -std=c++20 -g  -o heap_test server/dsa/heap/heap_test.cpp \
@@ -37,9 +51,9 @@ test_heap_sort: clean
 		server/dsa/sort/heap_sort.cpp server/dsa/heap/heap.cpp -W -Wall -pedantic \
 	&& ./heap_sort_test
 
-clean: 
+clean: #Remove the client and server executables
 	rm -rf columnarc columnard
 
-log-server:
+log-server: #Read the daemon syslogs
 	journalctl -f | grep columnar
 

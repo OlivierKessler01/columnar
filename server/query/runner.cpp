@@ -1,6 +1,7 @@
 #include "../lexical_analyzer/analyzer.h"
 #include "../parser/parser.h"
 #include <cstddef>
+#include <cstdlib>
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
@@ -34,7 +35,7 @@ ssize_t run_query(char *response, char* query, ssize_t query_len)
     //TODO: run the query plan builder
     //TODO: execute the query plan builder
 
-    response = (char*)malloc(21);
+    response = (char*)realloc(response,21);
     const char* response_s = "run_query() response";
     strcpy(response, response_s);
     return 21;

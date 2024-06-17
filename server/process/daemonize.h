@@ -12,5 +12,3 @@
 #include "../filesystem/configuration.h"
 
 void build_daemon(configuration_t config);
-
-static int process_request(int port, int max_req_len, char* log_file_path);
