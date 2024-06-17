@@ -24,7 +24,6 @@ using std::cout, std::endl;
 static void child_reap_handler(int sig)
 {
     int child_pid;
-    cout << "SIGINT received, waiting for child to terminate." << endl;
     //Potentialy multiple zombies are queued, make sure to reap them all
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
         cout << "Child with PID " << child_pid << "terminated" << endl;
@@ -62,6 +61,11 @@ int main(int argc, char** argv)
     //Reap the children if the parent receives a SIGINT
     if (signal(SIGINT, child_reap_handler) == SIG_ERR){
         perror("Can\'t catch SIGINT");
+        exit(EXIT_FAILURE);
+    }
+    //Reap the children when the exit
+    if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
+        perror("Can\'t catch SIGCHLD");
         exit(EXIT_FAILURE);
     }
 

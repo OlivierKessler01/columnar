@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sys/types.h>
+
 typedef struct state {
     char name[20];
 } state;
@@ -15,16 +16,16 @@ typedef struct delta {
 
 typedef struct nfa {
     state start_state;
-    delta* delta; // Transition functions
-    int delta_len;
+    delta* delta_set; // Transition functions
+    int delta_set_len;
     state accepting_state;
     state error_state;
 } nfa;
 
 typedef struct dfa {
     state start_state;
-    delta* delta; // Transition functions
-    int delta_len;
+    delta* delta_set; // Transition functions
+    int delta_set_len;
     state* accepting_states;
     int accepting_states_len;
     state error_state;

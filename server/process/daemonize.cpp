@@ -20,18 +20,15 @@
 
 #define REQ_BUF_LEN 500
 
-using std::cout, std::endl;
-
 /**
  * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
  */
 static void child_reap_handler(int sig)
 {
     int child_pid;
-    cout << "SIGINT" << sig << " received, waiting for child to terminate." << endl;
     //Potentialy multiple zombies are queued, make sure to reap them all
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
-        cout << "Child with PID " << child_pid << "terminated" << endl;
+        syslog(LOG_EMERG, "Child with PID %d terminated.", child_pid);
     }
 }
 
@@ -61,49 +58,46 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
     }
    
     //Reap the zombies children if the parent receives a SIGINT
-    if (signal(SIGINT, child_reap_handler) == SIG_ERR){
-        perror("Can\'t catch SIGINT");
+    if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
+        syslog(LOG_EMERG, "Can't add SIGINT signal handler: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     // Create a socket
-    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd < 0) {
+    if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         syslog(LOG_EMERG, "Error creating server socket.");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     // Bind the socket to a port
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(port); // Port number
-    if (
-        bind(
-            listen_fd, 
-            (struct sockaddr *)&server_addr,
-            sizeof(server_addr)
-        ) < 0
-    ) {
+                                        
+    if (bind(
+        listen_fd, 
+        (struct sockaddr *)&server_addr,
+        sizeof(server_addr)
+    ) < 0) {
         syslog(LOG_EMERG, "Error binding socket");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
     // Listen for incoming connections
     if (listen(listen_fd, 5) < 0) {
         syslog(LOG_EMERG, "Error listening on socket");
-        exit(-1);
+        exit(EXIT_FAILURE);
     }
 
-    sprintf(log_buffer, "Server listening on port %d", port);
-    outputFile << log_buffer << std::endl;
+    syslog(LOG_EMERG, "Server listening on port %d , listen_fd : %d", port, listen_fd);
     
     while (1) {
         // Accept incoming connections
-        if ((accepted_fd = accept(
-            listen_fd, (struct sockaddr *)&server_addr, &server_addr_len)
-        ) < 0) {
-            syslog(LOG_EMERG, "Error accept()ing incoming connection");
-            exit(-1);
+        accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
+
+        if (accepted_fd < 0) {
+            syslog(LOG_EMERG, "Error accept()ing incoming connection: %s", strerror(errno));
+            exit(EXIT_FAILURE);
         }
         
         sprintf(log_buffer, "accept()'d connection on port %d", port);
@@ -111,7 +105,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
 
         //A connection has been accepted, run the query in a child process
         if ((child_pid = fork()) < 0) {
-            perror("fork");
+            syslog(LOG_EMERG, "Fork() error: %s", strerror(errno));
             exit(EXIT_FAILURE);
         }
         else if(child_pid == 0)
@@ -174,6 +168,7 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             write(accepted_fd, response, len_response);
             free(response);
             close(accepted_fd);
+            exit(EXIT_SUCCESS);
         }
         else {
             //In parent process
