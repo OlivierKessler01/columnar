@@ -9,7 +9,7 @@
  */
 size_t lexe(token* tokens, char* str, ssize_t str_size)
 {
-    return -1; //If the string is not in the language
+    return 0; //If the string is not in the language
 }
 
 

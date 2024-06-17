@@ -4,9 +4,7 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <string.h>
-#include <iostream>
-
-using std::cout, std::endl; 
+#include <sys/syslog.h>
 
 /**
  * function run_query - Call the lexer/scanner, then call the parser,
@@ -16,19 +14,19 @@ using std::cout, std::endl;
  */
 ssize_t run_query(char *response, char* query, ssize_t query_len)
 {
-    cout << "in run_query() function" << endl;
+    syslog(LOG_INFO, "in run_query() function");
     token* tokens = NULL;
     ssize_t len_tokens, result_parser;
 
     //Run the lexer/scanner
     if ((len_tokens = lexe(tokens, query, query_len)) == -1) {
-        cout << "Wrong request synthax." << endl;
+        syslog(LOG_INFO, "Wrong request synthax.");
         return -1;
     }
     
     //Run the parser
     if ((result_parser = parse(tokens, len_tokens)) == -1) {
-        cout << "Wrong request regarding grammar." << endl;
+        syslog(LOG_INFO, "Wrong request grammar.");
         return -1;
     }
 

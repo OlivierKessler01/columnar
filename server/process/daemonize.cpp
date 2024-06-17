@@ -157,10 +157,12 @@ static int process_request(int port, int max_req_len, char* log_file_path) {
             
             dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
             sprintf(dyn_log_buffer, "Received request: \"%s\"\n", req_acc);
-            outputFile << dyn_log_buffer << std::endl;
+            syslog(LOG_INFO,"Received request: %s", dyn_log_buffer);
+            //outputFile << dyn_log_buffer << std::endl;
            
             //Run the query (lexe+parser+build query plan+ run query plan)
             if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
+                syslog(LOG_EMERG, "Error realloc'ing for request buffer");
                 outputFile << "Query execution failed." << std::endl;
             }
             free(req_acc);
