@@ -1,4 +1,4 @@
-#include "../lexical_analyzer/analyzer.h"
+#include "../scanner/analyzer.h"
 #include <sys/types.h>
 
 

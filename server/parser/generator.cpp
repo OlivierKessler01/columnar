@@ -1,5 +1,5 @@
 #include <iostream>
-#include "../lexical_analyzer/analyzer.h"
+#include "../scanner/analyzer.h"
 
 #define KEYWORD_REGEXP "(select)|(from)|(where)"
 #define WHITESPACE_REGEXP "\s"
@@ -10,6 +10,47 @@
 
 using std::cout, std::endl;
 
+
+/**
+ * union_construct - Generates an NFA union construct given two nfas
+ */
+static void union_construct(nfa* a, nfa* b, nfa* result)
+{
+}
+
+/**
+ * concat_construct - Generates an NFA concatenation construct given nfas
+ */
+static void concat_construct(nfa* a, nfa* b, nfa* result)
+{
+    result->start_state = a->start_state;
+    result->accepting_state = b->accepting_state;
+    
+    //A new transition now exists
+    result->delta_set_len = a->delta_set_len+b->delta_set_len+1;
+    result->delta_set = (delta*)realloc(result, (result->delta_set_len)*sizeof(delta));
+    
+    //Adding the epsilon transition
+    result->delta_set[0] = delta{a->accepting_state, b->start_state };
+    
+    //Copying states and transitions from a to result
+    for(int i=0; i<a->delta_set_len;i++){
+        result->delta_set[i] = a->delta_set[i];
+    }
+
+    //Copying states and transitions from b to result
+    for(int i=0; i<b->delta_set_len;i++){
+        result->delta_set[i+a->delta_set_len] = b->delta_set[i];
+    }
+}
+
+/**
+ * kleene_constuct - Generates an NFA Kleene's closure construct given two nfas
+ */
+static void kleene_construct(nfa* a, nfa* b, nfa* result)
+{
+}
+
 /**
  * Constructs a non-deterministic automaton from a regexp
  */
@@ -17,6 +58,7 @@ static void thompson_construction(nfa* nfa)
 {
     cout << "Converting regexp to nfa" << endl;
     //TODO: parse the regexp and build NFA
+    
 }
 
 /**

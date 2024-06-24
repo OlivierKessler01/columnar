@@ -1,4 +1,4 @@
-#include "../lexical_analyzer/analyzer.h"
+#include "../scanner/analyzer.h"
 #include "../parser/parser.h"
 #include <cstddef>
 #include <cstdlib>

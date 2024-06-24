@@ -13,7 +13,7 @@ help: # Print help on Makefile
 build_server: clean # Build the server 
 	g++ -std=c++20 -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp \
-		server/lexical_analyzer/analyzer.cpp \
+		server/scanner/analyzer.cpp \
 		server/parser/parser.cpp \
 		server/query/runner.cpp \
 		server/process/daemonize.cpp \
@@ -37,7 +37,12 @@ client: build_client
 run-dev: server client #Build client and server, then run them
 
 
-tests: test_heap test_heap_sort #Run the test suite
+tests: test_heap test_heap_sort test_scanner_generator #Run the test suite
+
+test_scanner_generator:
+	g++ -std=c++20 -g -o scanner_generator_test server/parser/generator_test.cpp \
+		server/parser/generator.cpp -W -Wall -pedantic \
+	&& ./scanner_generator_test
 
 test_heap: clean  
 	g++ -std=c++20 -g  -o heap_test server/dsa/heap/heap_test.cpp \
