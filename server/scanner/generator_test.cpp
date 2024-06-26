@@ -32,9 +32,9 @@ int test_concat_construct()
     b.delta_set = delta_set_b;
 
     nfa* result = (nfa*)malloc(sizeof(nfa));
+    raise(SIGTRAP);
     concat_construct(&a, &b, result);
     
-    //raise(SIGTRAP);
     assert(result->delta_set_len == a.delta_set_len+b.delta_set_len+1);
     assert(result->accepting_state == b.accepting_state);
     assert(result->start_state == a.start_state);
