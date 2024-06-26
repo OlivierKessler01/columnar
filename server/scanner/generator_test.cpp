@@ -1,6 +1,5 @@
 #include <cassert>
 #include "../scanner/analyzer.h"
-//Include the whole file to be able to test static functions
 #include "../scanner/generator.h"
 #include <cstdlib>
 

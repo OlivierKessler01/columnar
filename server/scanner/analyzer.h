@@ -35,7 +35,7 @@ typedef struct dfa {
     state* error_state;
 } dfa;
 
-enum synthactic_category{
+enum synthax_cat {
     keyword = 0,
     whitespace = 1,
     integer = 2,
@@ -45,7 +45,7 @@ enum synthactic_category{
 
 typedef struct token {
     char* lexeme;
-    synthactic_category category;
+    synthax_cat category;
 } token;
 
 size_t lexe(token* tokens, char* str, ssize_t str_size);
