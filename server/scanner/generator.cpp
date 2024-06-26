@@ -20,6 +20,16 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 
 /**
  * concat_construct - Generates an NFA concatenation construct given two nfas
+ *
+ *
+ * Ex : 
+ * 
+ * A: st_sta --"w"--> st_int_a --"z"--> acc_sta
+ * B: st_stb --"x"--> acc_stb
+ *
+ * Result : 
+ *
+ * st_sta --"w"--> st_int_a --"z"--> acc_sta --"epsilon"--> st_stb --"x"--> acc_stb
  */
 void concat_construct(nfa* a, nfa* b, nfa* result)
 {
@@ -33,7 +43,7 @@ void concat_construct(nfa* a, nfa* b, nfa* result)
     );
     
     //Adding the epsilon transition
-    result->delta_set[0] = delta{a->accepting_state, b->start_state };
+    result->delta_set[0] = delta{a->accepting_state, true, b->start_state };
     
     //Copying states and transitions from a to result
     for(int i=0; i<a->delta_set_len;i++){

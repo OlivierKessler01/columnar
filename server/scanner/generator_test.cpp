@@ -11,8 +11,8 @@ int test_concat_construct()
     state a_intermediary_state = state{"a_interm_state\n"};
     state a_start_state = state{"a_start_state\n"};
     delta delta_set_a[2];
-    delta_set_a[0] = delta{&a_start_state, &a_intermediary_state};
-    delta_set_a[1] = delta{&a_intermediary_state, &a_accept_state};
+    delta_set_a[0] = delta{&a_start_state, 'z', &a_intermediary_state};
+    delta_set_a[1] = delta{&a_intermediary_state, 'x',  &a_accept_state};
 
     nfa a = nfa{};
     a.delta_set_len = 2;
@@ -24,7 +24,7 @@ int test_concat_construct()
     state b_accept_state = state{"b_accept_state\n"};
     state b_start_state = state{"b_start_state\n"};
     delta delta_set_b[1];
-    delta_set_b[0] = delta{&b_start_state, &b_accept_state};
+    delta_set_b[0] = delta{&b_start_state, 'w', &b_accept_state};
 
     nfa b = nfa{};
     b.delta_set_len = 1;

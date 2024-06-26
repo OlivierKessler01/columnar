@@ -11,6 +11,10 @@ typedef struct state {
  */
 typedef struct delta {
     state* start_state;
+    union {
+        char input; 
+        bool epsilon;
+    };
     state* end_state;
 } delta;
 
