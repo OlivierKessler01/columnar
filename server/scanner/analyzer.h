@@ -10,25 +10,25 @@ typedef struct state {
  * Transition function for an NFA/DFA
  */
 typedef struct delta {
-    state start_state;
-    state end_state;
+    state* start_state;
+    state* end_state;
 } delta;
 
 typedef struct nfa {
-    state start_state;
+    state* start_state;
     delta* delta_set; // Transition functions
     int delta_set_len;
-    state accepting_state;
-    state error_state;
+    state* accepting_state;
+    state* error_state;
 } nfa;
 
 typedef struct dfa {
-    state start_state;
+    state* start_state;
     delta* delta_set; // Transition functions
     int delta_set_len;
     state* accepting_states;
     int accepting_states_len;
-    state error_state;
+    state* error_state;
 } dfa;
 
 enum synthactic_category{

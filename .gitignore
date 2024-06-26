@@ -7,3 +7,4 @@ columnarc
 columnard
 test
 *.o
+*_test

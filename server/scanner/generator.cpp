@@ -21,7 +21,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 /**
  * concat_construct - Generates an NFA concatenation construct given nfas
  */
-static void concat_construct(nfa* a, nfa* b, nfa* result)
+void concat_construct(nfa* a, nfa* b, nfa* result)
 {
     result->start_state = a->start_state;
     result->accepting_state = b->accepting_state;
