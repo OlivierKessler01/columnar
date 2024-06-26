@@ -39,8 +39,7 @@ run-dev: server client #Build client and server, then run them
 tests: test_heap test_heap_sort test_scanner_generator #Run the test suite
 
 test_scanner_generator: clean
-	g++ -std=c++20 -g -o scanner_generator_test  \
-		server/scanner/generator_test.cpp \
+	g++ -std=c++20 -g -DTEST -o scanner_generator_test  \
 		server/scanner/generator.cpp \
 		server/scanner/analyzer.cpp \
 		-W -Wall -pedantic \
