@@ -19,7 +19,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 }
 
 /**
- * concat_construct - Generates an NFA concatenation construct given nfas
+ * concat_construct - Generates an NFA concatenation construct given two nfas
  */
 void concat_construct(nfa* a, nfa* b, nfa* result)
 {
@@ -28,19 +28,21 @@ void concat_construct(nfa* a, nfa* b, nfa* result)
     
     //A new transition now exists
     result->delta_set_len = a->delta_set_len+b->delta_set_len+1;
-    result->delta_set = (delta*)realloc(result, (result->delta_set_len)*sizeof(delta));
+    result->delta_set = (delta*)realloc(
+        result->delta_set, (result->delta_set_len)*sizeof(delta)
+    );
     
     //Adding the epsilon transition
     result->delta_set[0] = delta{a->accepting_state, b->start_state };
     
     //Copying states and transitions from a to result
     for(int i=0; i<a->delta_set_len;i++){
-        result->delta_set[i] = a->delta_set[i];
+        result->delta_set[i+1] = a->delta_set[i];
     }
 
     //Copying states and transitions from b to result
     for(int i=0; i<b->delta_set_len;i++){
-        result->delta_set[i+a->delta_set_len] = b->delta_set[i];
+        result->delta_set[i+a->delta_set_len+1] = b->delta_set[i];
     }
 }
 
