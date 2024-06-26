@@ -110,3 +110,4 @@ int construct_scanner()
     free(dfa);
     return 0;
 }
+

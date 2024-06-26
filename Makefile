@@ -36,28 +36,35 @@ client: build_client
 .PHONY:
 run-dev: server client #Build client and server, then run them
 
-
 tests: test_heap test_heap_sort test_scanner_generator #Run the test suite
 
-test_scanner_generator:
-	g++ -std=c++20 -g -o scanner_generator_test server/parser/generator_test.cpp \
-		server/parser/generator.cpp -W -Wall -pedantic \
+test_scanner_generator: clean
+	g++ -std=c++20 -g -o scanner_generator_test  \
+		server/scanner/generator_test.cpp \
+		server/scanner/generator.cpp \
+		server/scanner/analyzer.cpp \
+		-W -Wall -pedantic \
 	&& ./scanner_generator_test
 
 test_heap: clean  
-	g++ -std=c++20 -g  -o heap_test server/dsa/heap/heap_test.cpp \
-		server/dsa/heap/heap.cpp server/dsa/vector_utils.cpp -W -Wall -pedantic \
+	g++ -std=c++20 -g  -o heap_test \
+		server/dsa/heap/heap_test.cpp \
+		server/dsa/heap/heap.cpp \
+		server/dsa/vector_utils.cpp \
+		-W -Wall -pedantic \
 	&& ./heap_test
 
 test_heap_sort: clean 
 	g++ -std=c++20 -g -o heap_sort_test \
 		server/dsa/sort/heap_sort_test.cpp \
 		server/dsa/vector_utils.cpp \
-		server/dsa/sort/heap_sort.cpp server/dsa/heap/heap.cpp -W -Wall -pedantic \
+		server/dsa/sort/heap_sort.cpp \
+		server/dsa/heap/heap.cpp \
+		-W -Wall -pedantic \
 	&& ./heap_sort_test
 
-clean: #Remove the client and server executables
-	rm -rf columnarc columnard
+clean: #Remove all generated binaries
+	rm -rf columnarc columnard *_test
 
 log-server: #Read the daemon syslogs
 	journalctl -f | grep columnar

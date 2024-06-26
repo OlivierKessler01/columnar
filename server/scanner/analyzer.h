@@ -44,6 +44,4 @@ typedef struct token {
     synthactic_category category;
 } token;
 
-int construct_scanner();
-
 size_t lexe(token* tokens, char* str, ssize_t str_size);
