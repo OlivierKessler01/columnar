@@ -8,7 +8,7 @@ int test_concat_construct()
 {
     //A
     state a_accept_state = state{"a_accept_state\n"};
-    state a_intermediary_state = state{"a_intermediary_state\n"};
+    state a_intermediary_state = state{"a_interm_state\n"};
     state a_start_state = state{"a_start_state\n"};
     delta delta_set_a[2];
     delta_set_a[0] = delta{&a_start_state, &a_intermediary_state};
