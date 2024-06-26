@@ -8,12 +8,14 @@ int test_concat_construct()
 {
     //A
     state a_accept_state = state{"a_accept_state\n"};
+    state a_intermediary_state = state{"a_intermediary_state\n"};
     state a_start_state = state{"a_start_state\n"};
-    delta delta_set_a[1];
-    delta_set_a[0] = delta{&a_start_state, &a_accept_state};
+    delta delta_set_a[2];
+    delta_set_a[0] = delta{&a_start_state, &a_intermediary_state};
+    delta_set_a[1] = delta{&a_intermediary_state, &a_accept_state};
 
     nfa a = nfa{};
-    a.delta_set_len = 1;
+    a.delta_set_len = 2;
     a.accepting_state = &a_accept_state;
     a.start_state = &a_start_state;
     a.delta_set = delta_set_a;
@@ -59,10 +61,12 @@ int test_concat_construct()
 
 int test_union_construct()
 {
+    return EXIT_SUCCESS;
 }
 
 int test_kleene_construct()
 {
+    return EXIT_SUCCESS;
 }
 
 int main()
