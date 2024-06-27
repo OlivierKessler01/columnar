@@ -14,6 +14,25 @@ using std::cout, std::endl;
 
 /**
  * union_construct - Generates an NFA union construct given two nfas
+ *
+ *        (New Start State)
+ *               |
+ *              ε|ε
+ *               |
+ *         +-----+-----+
+ *         |           |
+ *         v           v
+ * (Start State of A)  (Start State of B)
+ *         |           |
+ *        ...         ...
+ *         |           |
+ *         v           v
+ *(Accepting State of A) (Accepting State of B)
+ *         |           |
+ *          \         /
+ *           ε\     /ε
+ *             v   v
+ *      (New Accepting State)
  */
 static void union_construct(nfa* a, nfa* b, nfa* result)
 {
@@ -21,21 +40,26 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
     strcpy(result->accepting_state->name, "accepting union state\n");
 
     result->delta_set_len = a->delta_set_len+b->delta_set_len+4;
-    
+    result->delta_set = (delta*)malloc(result->delta_set_len*sizeof(delta));
 }
 
 /**
  * concat_construct - Generates an NFA concatenation construct given two nfas
  *
  *
- * Ex : 
- * 
- * A: st_sta --"w"--> st_int_a --"z"--> acc_sta
- * B: st_stb --"x"--> acc_stb
- *
- * Result : 
- *
- * st_sta --"w"--> st_int_a --"z"--> acc_sta --"epsilon"--> st_stb --"x"--> acc_stb
+ *   (Start State of A)
+ *         |
+ *        ...
+ *         |
+ *   (Accepting State of A)
+ *         |
+ *        ε|
+ *         |
+ *   (Start State of B)
+ *         |
+ *        ...
+ *         |
+ *   (Accepting State of B)
  */
 static void concat_construct(nfa* a, nfa* b, nfa* result)
 {
@@ -134,33 +158,32 @@ int construct_scanner()
 
 int test_concat_construct()
 {
+    nfa a,b,result;
+
     //A
     state a_accept_state = state{"a_accept_state\n"};
     state a_intermediary_state = state{"a_interm_state\n"};
     state a_start_state = state{"a_start_state\n"};
     delta delta_set_a[2];
-    delta_set_a[0] = delta{&a_start_state, 'z', &a_intermediary_state};
-    delta_set_a[1] = delta{&a_intermediary_state, 'x',  &a_accept_state};
 
-    nfa a = nfa{};
     a.delta_set_len = 2;
     a.accepting_state = &a_accept_state;
     a.start_state = &a_start_state;
     a.delta_set = delta_set_a;
+    a.delta_set[0] = delta{&a_start_state, 'z', &a_intermediary_state};
+    a.delta_set[1] = delta{&a_intermediary_state, 'x',  &a_accept_state};
     
     //B
     state b_accept_state = state{"b_accept_state\n"};
     state b_start_state = state{"b_start_state\n"};
     delta delta_set_b[1];
-    delta_set_b[0] = delta{&b_start_state, 'w', &b_accept_state};
 
-    nfa b = nfa{};
     b.delta_set_len = 1;
     b.accepting_state = &b_accept_state;
     b.start_state = &b_start_state;
     b.delta_set = delta_set_b;
+    b.delta_set[0] = delta{&b_start_state, 'w', &b_accept_state};
 
-    nfa result;
     concat_construct(&a, &b, &result);
     
     assert(result.delta_set_len == a.delta_set_len+b.delta_set_len+1);
@@ -190,6 +213,35 @@ int test_concat_construct()
 
 int test_union_construct()
 {
+    nfa a,b,result;
+
+    //A
+    state a_accept_state = state{"a_accept_state\n"};
+    state a_intermediary_state = state{"a_interm_state\n"};
+    state a_start_state = state{"a_start_state\n"};
+    delta delta_set_a[2];
+
+    a.delta_set_len = 2;
+    a.accepting_state = &a_accept_state;
+    a.start_state = &a_start_state;
+    a.delta_set = delta_set_a;
+    a.delta_set[0] = delta{&a_start_state, 'z', &a_intermediary_state};
+    a.delta_set[1] = delta{&a_intermediary_state, 'x',  &a_accept_state};
+    
+    //B
+    state b_accept_state = state{"b_accept_state\n"};
+    state b_start_state = state{"b_start_state\n"};
+    delta delta_set_b[1];
+
+    b.delta_set_len = 1;
+    b.accepting_state = &b_accept_state;
+    b.start_state = &b_start_state;
+    b.delta_set = delta_set_b;
+    b.delta_set[0] = delta{&b_start_state, 'w', &b_accept_state};
+
+    union_construct(&a, &b, &result);
+    assert(result.delta_set_len == a.delta_set_len+b.delta_set_len+4);
+    //TODO: Test all deltas
     return EXIT_SUCCESS;
 }
 
