@@ -241,6 +241,8 @@ int test_union_construct()
 
     union_construct(&a, &b, &result);
     assert(result.delta_set_len == a.delta_set_len+b.delta_set_len+4);
+    free(result.delta_set);
+
     //TODO: Test all deltas
     return EXIT_SUCCESS;
 }
