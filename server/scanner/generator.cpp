@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include "../scanner/analyzer.h"
 
@@ -16,6 +17,11 @@ using std::cout, std::endl;
  */
 static void union_construct(nfa* a, nfa* b, nfa* result)
 {
+    strcpy(result->start_state->name, "start union state\n");
+    strcpy(result->accepting_state->name, "accepting union state\n");
+
+    result->delta_set_len = a->delta_set_len+b->delta_set_len+4;
+    
 }
 
 /**
@@ -38,11 +44,9 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
     
     //A new transition now exists
     result->delta_set_len = a->delta_set_len+b->delta_set_len+1;
-    result->delta_set = (delta*)realloc(
-        result->delta_set, (result->delta_set_len)*sizeof(delta)
-    );
     
     //Adding the epsilon transition
+    result->delta_set = (delta*)malloc(result->delta_set_len*sizeof(delta));
     result->delta_set[0] = delta{a->accepting_state, true, b->start_state };
     
     //Copying states and transitions from a to result
@@ -118,8 +122,9 @@ int construct_scanner()
     generate_scanner_code(dfa);
 
     free(code);
-    free(nfa);
-    free(dfa);
+    free(nfa->delta_set);
+    free(dfa->delta_set);
+    free(dfa->accepting_states);
     return 0;
 }
 
@@ -142,7 +147,7 @@ int test_concat_construct()
     a.accepting_state = &a_accept_state;
     a.start_state = &a_start_state;
     a.delta_set = delta_set_a;
-        
+    
     //B
     state b_accept_state = state{"b_accept_state\n"};
     state b_start_state = state{"b_start_state\n"};
@@ -155,30 +160,31 @@ int test_concat_construct()
     b.start_state = &b_start_state;
     b.delta_set = delta_set_b;
 
-    nfa* result = (nfa*)malloc(sizeof(nfa));
-    concat_construct(&a, &b, result);
+    nfa result;
+    concat_construct(&a, &b, &result);
     
-    assert(result->delta_set_len == a.delta_set_len+b.delta_set_len+1);
-    assert(result->accepting_state == b.accepting_state);
-    assert(result->start_state == a.start_state);
+    assert(result.delta_set_len == a.delta_set_len+b.delta_set_len+1);
+    assert(result.accepting_state == b.accepting_state);
+    assert(result.start_state == a.start_state);
     
     //Check if the epsilon transition is corretly set-up
     bool epsilon_transition = false; 
     delta transition;
 
-    for(int i = 0; i<result->delta_set_len;i++)
+    for(int i = 0; i<result.delta_set_len;i++)
     {
-        transition = result->delta_set[i];
+        transition = result.delta_set[i];
         if (transition.start_state == a.accepting_state && transition.end_state == b.start_state)
         {
             epsilon_transition = true;
         }
     }
-    assert(result->delta_set[0].start_state == a.accepting_state);
-    assert(result->delta_set[0].start_state == a.accepting_state);
+    assert(result.delta_set[0].start_state == a.accepting_state);
+    assert(result.delta_set[0].start_state == a.accepting_state);
     assert(epsilon_transition == true);
 
-    free(result);
+    free(result.delta_set);
+
     return EXIT_SUCCESS;
 }
 
