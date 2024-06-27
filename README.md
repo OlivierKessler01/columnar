@@ -15,6 +15,17 @@ Columnar is only compatible with Linux over x86 patforms at the moment.
 ## Architecture documentation
 [doc/architecture.md](doc/architecture.md)
 
+## Project directory structure
+
+- [server/](server/) Server code
+  - [dsa/](server/dsa) Various usefull data structures and algorithms.
+  - [filesytem/](server/filesystem) Various POSIX-compatible utils to access the filesystem.
+  - [parser/](server/parser) SQL grammar parser 
+  - [scanner/](server/scanner) SQL synthax scanner 
+  - [process/](server/process) Code handling the process/thread generation and network handling 
+  - [query/](server/query) Query planner and executor 
+- [client/](client/) Client code
+
 
 ## Installation & usage
 
