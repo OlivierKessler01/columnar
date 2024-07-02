@@ -1,3 +1,13 @@
+/*
+ *  ANSI-SQL scanner generator.
+ *  Generates a scanner that can then be compiled and executed to tokenize a string
+ *  using ANSI-SQL synthax.
+ *
+ *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
+ */
+
+
+
 #include <cstring>
 #include <iostream>
 #include "../scanner/analyzer.h"
@@ -24,7 +34,7 @@ using std::cout, std::endl;
  *         v           v
  * (Start State of A)  (Start State of B)
  *         |           |
- *        ...         ...
+ *        ...         ... : those are inside layers of a and b, could be a complex nfas
  *         |           |
  *         v           v
  *(Accepting State of A) (Accepting State of B)
@@ -49,7 +59,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
  *
  *   (Start State of A)
  *         |
- *        ...
+ *        ...  
  *         |
  *   (Accepting State of A)
  *         |
@@ -57,7 +67,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
  *         |
  *   (Start State of B)
  *         |
- *        ...
+ *        ... 
  *         |
  *   (Accepting State of B)
  */
