@@ -1,3 +1,9 @@
+/*
+ *  POSIX-based on-disk configuration manager. 
+ *
+ *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
+ */
+
 #include "configuration.h"
 #include <stdlib.h>
 #include <string.h>
@@ -50,10 +56,9 @@ int set_configuration_parameter(
 }
 
 /*
- * This function loads the configuration from the configuration file
+ * load_configuration - Loads the configuration from the configuration file
  *
- * The configuration file synthax should be of the following form :
- *
+ * The configuration file format should be of the following form :
  *
  * KEY=VALUE;
  * KEY=VALUE;

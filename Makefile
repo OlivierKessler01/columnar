@@ -46,8 +46,7 @@ test_scanner_generator: clean
 	&& ./scanner_generator_test
 
 test_heap: clean  
-	g++ -std=c++20 -g  -o heap_test \
-		server/dsa/heap/heap_test.cpp \
+	g++ -std=c++20 -g  -DTEST -o heap_test \
 		server/dsa/heap/heap.cpp \
 		server/dsa/vector_utils.cpp \
 		-W -Wall -pedantic \

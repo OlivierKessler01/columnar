@@ -6,8 +6,6 @@
  *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
  */
 
-
-
 #include <cstring>
 #include <iostream>
 #include "../scanner/analyzer.h"
