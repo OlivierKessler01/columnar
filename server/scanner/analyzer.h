@@ -1,39 +1,37 @@
 #pragma once
 
 #include <sys/types.h>
+#include <unordered_map> 
+#include <iostream>
+#include <vector>
 
-typedef struct state {
-    char name[200];
-} state;
+using namespace std;
+
 
 /**
  * Transition function for an NFA/DFA
  */
 typedef struct delta {
-    state* start_state;
+    string start_state;
     union {
         char input; 
         bool epsilon;
     };
-    state* end_state;
+    string end_state;
 } delta;
 
 typedef struct nfa {
-    delta* delta_set; // Transition functions
-    int delta_set_len;
-    state* state_set; //Sets that aren't start or accepting or error
-                      // [0] is start start
-                      // [1] is accepting state
-    int state_set_len;
+    string start;
+    string accept;
+    unordered_map<string, vector<delta>> delta_inorder; // [state_uid -> deltas...]
+    unordered_map<string, vector<delta>> delta_inverse; // [state_uid -> delta...]
 } nfa;
 
 typedef struct dfa {
-    state* start_state;
-    delta* delta_set; // Transition functions
-    int delta_set_len;
-    state* accepting_states;
-    int accepting_states_len;
-    state* error_state;
+    string start;
+    vector<string> accept;
+    unordered_map<string, vector<delta>> delta_inorder; // [state_uid -> deltas...]
+    unordered_map<string, vector<delta>> delta_inverse; // [state_uid -> delta...]
 } dfa;
 
 enum synthax_cat {
