@@ -8,7 +8,7 @@
 
 #include <cstring>
 #include <iostream>
-#include "../scanner/analyzer.h"
+#include "analyzer.h"
 
 #define KEYWORD_REGEXP "(select)|(from)|(where)"
 #define WHITESPACE_REGEXP "\s"
@@ -19,6 +19,33 @@
 
 using std::cout, std::endl;
 
+/**
+ * Deep copies states and transitions from an nfa to another
+ *
+ * Returns the index at which the added states start in the state array
+ */
+static int nfa_append(nfa *src, nfa* dest)
+{
+    int initial_state_set_len = dest->state_set_len;
+    int initial_delta_set_len = dest->delta_set_len;
+    int new_state_set_len = dest->state_set_len+src->state_set_len;
+    int new_delta_set_len = dest->delta_set_len+src->delta_set_len;
+
+    dest->state_set = (state*)realloc(dest->state_set, new_state_set_len*sizeof(state));
+    dest->delta_set = (delta*)realloc(dest->delta_set, new_delta_set_len*sizeof(delta));
+    
+    //Copying states
+    for(int i=0; i<src->state_set_len;i++){
+        strcpy(src->state_set[i+initial_state_set_len].name, src->state_set[i].name);
+    }
+
+    //Copying transitions
+    for(int i=0; i<src->delta_set_len;i++){
+        dest->delta_set[i+initial_delta_set_len] = src->delta_set[i];
+    }
+
+    return initial_state_set_len;
+}
 
 /**
  * union_construct - Generates an NFA union construct given two nfas
@@ -44,17 +71,60 @@ using std::cout, std::endl;
  */
 static void union_construct(nfa* a, nfa* b, nfa* result)
 {
-    strcpy(result->start_state->name, "start union state\n");
-    strcpy(result->accepting_state->name, "accepting union state\n");
-
+    //Copy state and transitions from a and b to result
+    int offset_a = nfa_append(a,result);
+    int offset_b = nfa_append(b,result);
+    
+    //Adding 4 new epsilons transitions
     result->delta_set_len = a->delta_set_len+b->delta_set_len+4;
-    result->delta_set = (delta*)malloc(result->delta_set_len*sizeof(delta));
+    result->delta_set = (delta*)realloc(result->delta_set, result->delta_set_len*sizeof(delta));
+
+    result->delta_set[result->delta_set_len-4].start_state = &(result->state_set[0]);
+    result->delta_set[result->delta_set_len-4].end_state = &(result->state_set[offset_a]);
+
+    result->delta_set[result->delta_set_len-4].start_state = &(result->state_set[0]);
+    result->delta_set[result->delta_set_len-4].end_state = &(result->state_set[offset_b]);
+
+
+    result->delta_set[result->delta_set_len-4].start_state = &(result->state_set[offset_b+1]);
+    result->delta_set[result->delta_set_len-4].end_state = &(result->state_set[1]);
+
+    result->delta_set[result->delta_set_len-4].start_state = &(result->state_set[offset_a+1]);
+    result->delta_set[result->delta_set_len-4].end_state = &(result->state_set[1]);
+}
+
+
+static void allocate_nfa(nfa* nfa)
+{
+    nfa->delta_set = (delta*)malloc(0);
+    nfa->delta_set_len = 0;
+    nfa->state_set = (state*)malloc(2*sizeof(state));
+    nfa->state_set_len = 2;
+    nfa->state_set[0] = state{"start"};
+    nfa->state_set[1] = state{"accept"};
+}
+
+static void deallocate_nfa(nfa* nfa)
+{
+    free(nfa->delta_set);
+    free(nfa->state_set);
+}
+
+static void allocate_dfa(dfa* dfa)
+{
+}
+
+static void deallocate_dfa(dfa* dfa)
+{
 }
 
 /**
  * concat_construct - Generates an NFA concatenation construct given two nfas
  *
- *
+ *   (New start state)
+ *         |
+ *        ε|
+ *         |
  *   (Start State of A)
  *         |
  *        ...  
@@ -68,28 +138,32 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
  *        ... 
  *         |
  *   (Accepting State of B)
+ *         |
+ *        ε|
+ *         |
+ *   (New accepting state)
  */
 static void concat_construct(nfa* a, nfa* b, nfa* result)
 {
-    result->start_state = a->start_state;
-    result->accepting_state = b->accepting_state;
-    
-    //A new transition now exists
-    result->delta_set_len = a->delta_set_len+b->delta_set_len+1;
-    
-    //Adding the epsilon transition
-    result->delta_set = (delta*)malloc(result->delta_set_len*sizeof(delta));
-    result->delta_set[0] = delta{a->accepting_state, true, b->start_state };
-    
-    //Copying states and transitions from a to result
-    for(int i=0; i<a->delta_set_len;i++){
-        result->delta_set[i+1] = a->delta_set[i];
-    }
+    //Copy state and transitions from a and b to result
+    int offset_a = nfa_append(a,result);
+    int offset_b = nfa_append(b,result);
 
-    //Copying states and transitions from b to result
-    for(int i=0; i<b->delta_set_len;i++){
-        result->delta_set[i+a->delta_set_len+1] = b->delta_set[i];
-    }
+    //Add the 3 new epsilon transitions
+    result->delta_set_len +=3;
+    result->delta_set = (delta*)realloc(result->delta_set, result->delta_set_len);
+
+    result->delta_set[result->delta_set_len -1].start_state = &(result->state_set[offset_a+1]);
+    result->delta_set[result->delta_set_len -1].end_state = &(result->state_set[offset_b]); 
+    result->delta_set[result->delta_set_len -1].epsilon = true;
+
+    result->delta_set[result->delta_set_len -2].start_state = &(result->state_set[0]);
+    result->delta_set[result->delta_set_len -2].end_state = &(result->state_set[offset_a]); 
+    result->delta_set[result->delta_set_len -2].epsilon = true;
+
+    result->delta_set[result->delta_set_len -3].start_state = &(result->state_set[1]);
+    result->delta_set[result->delta_set_len -3].end_state = &(result->state_set[offset_b+1]); 
+    result->delta_set[result->delta_set_len -3].epsilon = true;
 }
 
 /**
@@ -154,9 +228,8 @@ int construct_scanner()
     generate_scanner_code(dfa);
 
     free(code);
-    free(nfa->delta_set);
-    free(dfa->delta_set);
-    free(dfa->accepting_states);
+    deallocate_nfa(nfa);
+    deallocate_dfa(dfa);
     return 0;
 }
 
@@ -167,6 +240,9 @@ int construct_scanner()
 int test_concat_construct()
 {
     nfa a,b,result;
+    allocate_nfa(a);
+    allocate_nfa(b);
+    allocate_nfa(result);
 
     //A
     state a_accept_state = state{"a_accept_state\n"};
@@ -214,7 +290,9 @@ int test_concat_construct()
     assert(result.delta_set[0].start_state == a.accepting_state);
     assert(epsilon_transition == true);
 
-    free(result.delta_set);
+    deallocate_nfa(result);
+    deallocate_nfa(a);
+    deallocate_nfa(b);
 
     return EXIT_SUCCESS;
 }
@@ -222,6 +300,9 @@ int test_concat_construct()
 int test_union_construct()
 {
     nfa a,b,result;
+    allocate_nfa(&a);
+    allocate_nfa(&b);
+    allocate_nfa(&result);
 
     //A
     state a_accept_state = state{"a_accept_state\n"};
@@ -235,21 +316,66 @@ int test_union_construct()
     a.delta_set = delta_set_a;
     a.delta_set[0] = delta{&a_start_state, 'z', &a_intermediary_state};
     a.delta_set[1] = delta{&a_intermediary_state, 'x',  &a_accept_state};
+    a.state_set_len = 1;
+    a.state_set = (state*)realloc(sizeof(state);
+    a.state_set[0] = a_intermediary_state;
     
     //B
     state b_accept_state = state{"b_accept_state\n"};
+    state b_intermediary_state = state{"b_interm_state\n")
     state b_start_state = state{"b_start_state\n"};
-    delta delta_set_b[1];
+    delta delta_set_b[2];
 
-    b.delta_set_len = 1;
+    b.delta_set_len = 2;
     b.accepting_state = &b_accept_state;
     b.start_state = &b_start_state;
     b.delta_set = delta_set_b;
-    b.delta_set[0] = delta{&b_start_state, 'w', &b_accept_state};
+    b.delta_set[0] = delta{&b_start_state, 'w', &b_intermediary_state};
+    a.delta_set[1] = delta{&b_intermediary_state, 'x',  &b_accept_state};
+    b.state_set_len = 1;
+    b.state_set = (state*)realloc(sizeof(state));
+    b.state_set[0] = b_intermediary_state;
 
     union_construct(&a, &b, &result);
     assert(result.delta_set_len == a.delta_set_len+b.delta_set_len+4);
-    free(result.delta_set);
+    
+    
+    bool epsilon_to_start_of_b, epsilon_to_start_of_a = false;
+    bool epsilon_from_end_of_b, epsilon_from_end_of_a = false;
+    delta delt;
+
+    for(int i=0;i<result.delta_set_len;i++)
+    {
+        delt = result.delta_set[i];
+        
+        if (strcmp(delt.start_state->name, result.start_state->name) == 0){
+            if(strcmp(delt.end_state->name,a.start_state->name) == 0){
+                epsilon_to_start_of_a = true;
+            }
+            if(strcmp(delt.end_state->name,b.start_state->name) == 0){
+                epsilon_to_start_of_b = true;
+            }
+        }
+        
+        
+        if (strcmp(delt.end_state->name, result.accepting_state->name) == 0){
+            if(strcmp(delt.start_state->name,a.accepting_state->name) == 0){
+                epsilon_from_end_of_a = true;
+            }
+            if(strcmp(delt.start_state->name,b.accepting_state->name) == 0){
+                epsilon_from_end_of_b = true;
+            }
+        }
+    }
+    
+    assert(epsilon_to_start_of_b == true);
+    assert(epsilon_to_start_of_a == true);
+    assert(epsilon_from_end_of_b = true);
+    assert(epsilon_from_end_of_a = true);
+    
+    deallocate_nfa(&a);
+    deallocate_nfa(&b);
+    deallocate_nfa(&result);
 
     //TODO: Test all deltas
     return EXIT_SUCCESS;

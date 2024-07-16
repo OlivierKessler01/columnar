@@ -3,7 +3,7 @@
 #include <sys/types.h>
 
 typedef struct state {
-    char name[20];
+    char name[200];
 } state;
 
 /**
@@ -19,11 +19,12 @@ typedef struct delta {
 } delta;
 
 typedef struct nfa {
-    state* start_state;
     delta* delta_set; // Transition functions
     int delta_set_len;
-    state* accepting_state;
-    state* error_state;
+    state* state_set; //Sets that aren't start or accepting or error
+                      // [0] is start start
+                      // [1] is accepting state
+    int state_set_len;
 } nfa;
 
 typedef struct dfa {
