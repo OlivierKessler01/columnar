@@ -12,26 +12,24 @@ using namespace std;
  * Transition function for an NFA/DFA
  */
 typedef struct delta {
-    string start_state;
+    string from;
     union {
         char input; 
         bool epsilon;
     };
-    string end_state;
+    string to;
 } delta;
 
 typedef struct nfa {
     string start;
     string accept;
-    unordered_map<string, vector<delta>> delta_inorder; // [state_uid -> deltas...]
-    unordered_map<string, vector<delta>> delta_inverse; // [state_uid -> delta...]
+    unordered_map<string, vector<delta>> deltas; // [state_uid -> deltas...]
 } nfa;
 
 typedef struct dfa {
     string start;
     vector<string> accept;
-    unordered_map<string, vector<delta>> delta_inorder; // [state_uid -> deltas...]
-    unordered_map<string, vector<delta>> delta_inverse; // [state_uid -> delta...]
+    unordered_map<string, vector<delta>> deltas; // [state_uid -> deltas...]
 } dfa;
 
 enum synthax_cat {

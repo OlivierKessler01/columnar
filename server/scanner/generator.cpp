@@ -15,27 +15,60 @@
 #define IDENTIFIER_REGEXP "[a..z]([a..z]|[A...Z]|[0...9])*"
 #define COMMENT_REGEXP "/\* ([a..z]|[A...Z]|[0...9])*  \*/" 
 #define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" WHITESPACE_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP "|" COMMENT_REGEXP
+#include <random>
+#include <sstream>
 
 using std::cout, std::endl;
+
+namespace uuid {
+    static std::random_device              rd;
+    static std::mt19937                    gen(rd());
+    static std::uniform_int_distribution<> dis(0, 15);
+    static std::uniform_int_distribution<> dis2(8, 11);
+    
+    /**
+     * Generates UUIDs with 32 bits of randomness
+     * Number of possible combinations : approx 4E9
+     * Should be enough for the number of states we use
+     */
+    std::string generate_uuid_v4() {
+        std::stringstream ss;
+        int i;
+        ss << std::hex;
+        for (i = 0; i < 8; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        for (i = 0; i < 4; i++) {
+            ss << dis(gen);
+        }
+        ss << "-4";
+        for (i = 0; i < 3; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        ss << dis2(gen);
+        for (i = 0; i < 3; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        for (i = 0; i < 12; i++) {
+            ss << dis(gen);
+        };
+        return ss.str();
+    }
+}
 
 /**
  * Copies states and transitions from one nfa to another
  */
 static void nfa_append(nfa *src, nfa* dest)
 {
-    for (const auto& [key, value] : src->delta_inorder){
-         dest->delta_inorder[key].insert(
-            dest->delta_inorder[key].end(),
-            src->delta_inorder[key].begin(),
-            src->delta_inorder[key].end()
-        );
-    }
-
-    for (const auto& [key, value] : src->delta_inverse){
-         dest->delta_inverse[key].insert(
-            dest->delta_inverse[key].end(),
-            src->delta_inverse[key].begin(),
-            src->delta_inverse[key].end()
+    for (const auto& [key, value] : src->deltas){
+        dest->deltas[key].insert(
+            dest->deltas[key].end(),
+            src->deltas[key].begin(),
+            src->deltas[key].end()
         );
     }
 }
@@ -69,48 +102,35 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
     nfa_append(b,result);
     
     delta first = delta{};
-    first.start_state = result->start;
-    first.end_state = a->start;
+    first.from = result->start;
+    first.to = a->start;
     first.epsilon = true;
-    result->delta_inorder[result->start].push_back(first);
-    first.start_state = a->start;
-    first.end_state = result->start;
-    result->delta_inverse[a->start].push_back(first);
+    result->deltas[result->start].push_back(first);
 
     delta second = delta{};
-    second.start_state = result->start;
-    second.end_state = b->start;
+    second.from = result->start;
+    second.to = b->start;
     second.epsilon = true;
-    result->delta_inorder[result->start].push_back(second);
-    second.start_state = b->start;
-    second.end_state = result->start;
-    result->delta_inverse[b->start].push_back(second);
+    result->deltas[result->start].push_back(second);
 
     delta third = delta{};
-    third.start_state = a->accept;
-    third.end_state = result->accept;
+    third.from = a->accept;
+    third.to = result->accept;
     third.epsilon = true;
-    result->delta_inorder[a->accept].push_back(third);
-    third.start_state = result->accept;
-    third.end_state = a->accept;
-    result->delta_inverse[result->accept].push_back(third);
+    result->deltas[a->accept].push_back(third);
 
     delta fourth = delta{};
-    fourth.start_state = b->accept;
-    fourth.end_state = result->accept;
+    fourth.from = b->accept;
+    fourth.to = result->accept;
     third.epsilon = true;
-    result->delta_inorder[b->accept].push_back(fourth);
-    fourth.start_state = result->accept;
-    fourth.end_state = b->accept;
-    result->delta_inverse[result->accept].push_back(fourth);
+    result->deltas[b->accept].push_back(fourth);
 }
 
 
 static void allocate_nfa(nfa* nfa)
 {
-    //TODO generate random UUIDs
-    nfa->start = "start";
-    nfa->accept = "accept";
+    nfa->start = uuid::generate_uuid_v4();
+    nfa->accept = uuid::generate_uuid_v4();
 }
 
 
@@ -141,13 +161,10 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
 
     //Add the epsilon transitions
     delta first = delta{};
-    first.start_state = a->accept;
-    first.end_state = b->start;
+    first.from = a->accept;
+    first.to = b->start;
     first.epsilon = true;
-    result->delta_inorder[a->accept].push_back(first);
-    first.start_state = b->start;
-    first.end_state = a->accept;
-    result->delta_inverse[b->start].push_back(first);
+    result->deltas[a->accept].push_back(first);
 }
 
 /**
@@ -164,7 +181,6 @@ static void thompson_construction(nfa* nfa)
 {
     cout << "Converting regexp to nfa" << endl;
     //TODO: parse the regexp and build NFA
-    
 }
 
 /**
@@ -228,28 +244,26 @@ int test_concat_construct()
 
     //A
     delta first;
-    first.start_state = "1";
-    first.end_state = "2";
+    first.from = "1";
+    first.to = "2";
     first.input = 'c';
 
-    a.delta_inorder[first.start_state].push_back(first);
-    a.delta_inverse[first.end_state].push_back(first);
+    a.deltas[first.from].push_back(first);
 
     //B
     delta second;
-    second.start_state = "3";
-    second.end_state = "4";
+    second.from = "3";
+    second.to = "4";
     second.input = 'd';
 
-    b.delta_inorder[second.start_state].push_back(second);
-    b.delta_inverse[second.end_state].push_back(second);
+    b.deltas[second.from].push_back(second);
 
     concat_construct(&a, &b, &result);
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
+    assert(result.deltas.at(a.accept).size() == 1 );
     
-
     return EXIT_SUCCESS;
 }
 
@@ -262,25 +276,25 @@ int test_union_construct()
 
     //A
     delta first;
-    first.start_state = "1";
-    first.end_state = "2";
+    first.from = "1";
+    first.to = "2";
     first.input = 'c';
 
-    a.delta_inorder[first.start_state].push_back(first);
-    a.delta_inverse[first.end_state].push_back(first);
+    a.deltas[first.from].push_back(first);
 
     //B
     delta second;
-    second.start_state = "3";
-    second.end_state = "4";
+    second.from = "3";
+    second.to = "4";
     second.input = 'd';
 
-    b.delta_inorder[second.start_state].push_back(second);
-    b.delta_inverse[second.end_state].push_back(second);
+    b.deltas[second.from].push_back(second);
 
     union_construct(&a, &b, &result);
 
-
+    assert(result.deltas.at(result.start).size() == 2);
+    assert(result.deltas.at(b.accept).size() == 1);
+    assert(result.deltas.at(a.accept).size()== 1);
     //TODO: Test all deltas
     //
     return EXIT_SUCCESS;
