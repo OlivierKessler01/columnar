@@ -74,7 +74,7 @@ static void nfa_append(nfa *src, nfa* dest)
 }
 
 /**
- * union_construct - Generates an NFA union construct given two nfas
+ * union_construct - Generates an NFA union construct (a|b) given two nfas
  *
  *        (New Start State)
  *               |
@@ -135,7 +135,7 @@ static void allocate_nfa(nfa* nfa)
 
 
 /**
- * concat_construct - Generates an NFA concatenation construct given two nfas
+ * concat_construct - Generates an NFA concatenation construct (ab) given two nfas
  *
  *   (Start State of A)
  *         |
@@ -168,7 +168,27 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
 }
 
 /**
- * kleene_constuct - Generates an NFA Kleene's closure construct given two nfas
+ * kleene_constuct - Generates an NFA Kleene's closure (a*) construct from an nfa
+ *    
+ *
+ *        (New Start State)
+ *               |
+ *              ε|ε
+ *               |
+ *         +-----+----------+
+ *         |                |
+ *         v                | 
+ *  (Start State of A)      | 
+ *         |         ^      |
+ *        ...        |      | 
+ *         |         |ε     |
+ *         v         |      | 
+ * (Accepting State of A)   | 
+ *         |                |
+ *          \              /
+ *          ε\            /
+ *            v          v
+ *        (New Accepting State)
  */
 static void kleene_construct(nfa* a, nfa* b, nfa* result)
 {
