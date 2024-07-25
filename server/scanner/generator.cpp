@@ -190,8 +190,36 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
  *            v          v
  *        (New Accepting State)
  */
-static void kleene_construct(nfa* a, nfa* b, nfa* result)
+static void kleene_construct(nfa* a, nfa* result)
 {
+    //Copy state and transitions from a and b to result
+    nfa_append(a,result);
+
+    delta empty = delta{};
+    empty.from = result->start;
+    empty.to = result->accept;
+    empty.epsilon = true;
+
+
+    delta to_a = delta{};
+    to_a.from = result->start;
+    to_a.to = a->start;
+    to_a.epsilon = true;
+
+    delta feedback = delta{};
+    feedback.from = a->accept;
+    feedback.to = a->start;
+    empty.epsilon = true;
+
+    delta stop = delta{};
+    stop.from = a->accept;
+    stop.to = result->accept;
+    stop.epsilon = true;
+
+    result->deltas[result->start].push_back(empty);
+    result->deltas[result->start].push_back(to_a);
+    result->deltas[a->accept].push_back(feedback);
+    result->deltas[a->accept].push_back(stop);
 }
 
 /**
@@ -322,6 +350,14 @@ int test_union_construct()
 
 int test_kleene_construct()
 {
+    nfa a,result;
+    allocate_nfa(&a);
+    allocate_nfa(&result);
+
+    kleene_construct(&a, &result);
+
+    assert(result.deltas.at(result.start).size() == 2);
+    assert(result.deltas.at(a.accept).size() == 2);
     return EXIT_SUCCESS;
 }
 
