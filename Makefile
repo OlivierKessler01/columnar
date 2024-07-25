@@ -34,9 +34,16 @@ client: build_client
 	./columnarc 127.0.0.1 3307
 
 .PHONY:
-run-dev: server client #Build client and server, then run them
+run-dev: server client # Build client and server, then run them
 
-tests: test_heap test_heap_sort test_scanner_generator #Run the test suite
+tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
+
+generate_scanner: clean # Generate the scanner code
+	g++ -std=c++20 -g  -o scanner  \
+		server/scanner/generator.cpp \
+		server/scanner/analyzer.cpp \
+		-W -Wall -pedantic \
+	&& ./scanner
 
 test_scanner_generator: clean
 	g++ -std=c++20 -g -DTEST -o scanner_generator_test  \
@@ -61,9 +68,9 @@ test_heap_sort: clean
 		-W -Wall -pedantic \
 	&& ./heap_sort_test
 
-clean: #Remove all generated binaries
+clean: # Remove all generated binaries
 	rm -rf columnarc columnard *_test
 
-log-server: #Read the daemon syslogs
+log-server: # Read the daemon syslogs
 	journalctl -f | grep columnar
 

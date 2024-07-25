@@ -8,3 +8,4 @@ columnard
 test
 *.o
 *_test
+scanner

@@ -9,12 +9,11 @@
 #include <iostream>
 #include "analyzer.h"
 
-#define KEYWORD_REGEXP "(select)|(from)|(where)"
-#define WHITESPACE_REGEXP "\s"
-#define INTEGER_REGEXP "0|[1...9][0...9]*"
-#define IDENTIFIER_REGEXP "[a..z]([a..z]|[A...Z]|[0...9])*"
-#define COMMENT_REGEXP "/\* ([a..z]|[A...Z]|[0...9])*  \*/" 
-#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" WHITESPACE_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP "|" COMMENT_REGEXP
+#define KEYWORD_REGEXP "((select)|(from)|(where))"
+#define WHITESPACE_REGEXP "(\s)"
+#define INTEGER_REGEXP "(0|[1...9][0...9]*)"
+#define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
+#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" WHITESPACE_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP 
 #include <random>
 #include <sstream>
 
@@ -229,6 +228,7 @@ static void thompson_construction(nfa* nfa)
 {
     cout << "Converting regexp to nfa" << endl;
     //TODO: parse the regexp and build NFA
+    cout << GLOBAL_REGEXP << endl;
 }
 
 /**
@@ -255,8 +255,7 @@ static void minimize_dfa(dfa* dfa)
  */
 static void generate_scanner_code(dfa* dfa)
 {
-    cout << "Generate scanner C code as a file." << endl;
-    //TODO: Create scanner C file from dfa. 
+    cout << "Generate scanner C++ code as a file." << endl;
 }
 
 /**
@@ -367,4 +366,11 @@ int main()
     test_union_construct();
     test_kleene_construct();
 }
+#else
+
+int main()
+{
+    construct_scanner();
+}
+
 #endif
