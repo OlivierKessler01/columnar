@@ -10,12 +10,14 @@
 #include "analyzer.h"
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
-#define WHITESPACE_REGEXP "(\s)"
 #define INTEGER_REGEXP "(0|[1...9][0...9]*)"
 #define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
-#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" WHITESPACE_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP 
+#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|"  INTEGER_REGEXP "|" KEYWORD_REGEXP 
 #include <random>
 #include <sstream>
+#include <cstring>
+#include <stack>
+#include <memory>
 
 using std::cout, std::endl;
 
@@ -58,8 +60,62 @@ namespace uuid {
     }
 }
 
+// Base struct for a regex node
+struct RegexNode {
+    virtual ~RegexNode() = default;
+    virtual void print() const = 0;
+};
+
+// Struct for literal characters or strings
+struct Literal : public RegexNode {
+    std::string value;
+    Literal(const std::string& val) : value(val) {}
+    void print() const override {
+        std::cout << "Literal(" << value << ")";
+    }
+};
+
+// Struct for union operation (alternation)
+struct Union : public RegexNode {
+    std::shared_ptr<RegexNode> left;
+    std::shared_ptr<RegexNode> right;
+    Union(std::shared_ptr<RegexNode> l, std::shared_ptr<RegexNode> r) : left(l), right(r) {}
+    void print() const override {
+        std::cout << "Union(";
+        left->print();
+        std::cout << ", ";
+        right->print();
+        std::cout << ")";
+    }
+};
+
+// Struct for concatenation operation
+struct Concatenation : public RegexNode {
+    std::shared_ptr<RegexNode> left;
+    std::shared_ptr<RegexNode> right;
+    Concatenation(std::shared_ptr<RegexNode> l, std::shared_ptr<RegexNode> r) : left(l), right(r) {}
+    void print() const override {
+        std::cout << "Concat(";
+        left->print();
+        std::cout << ", ";
+        right->print();
+        std::cout << ")";
+    }
+};
+
+// Struct for Kleene star operation
+struct KleeneStar : public RegexNode {
+    std::shared_ptr<RegexNode> operand;
+    KleeneStar(std::shared_ptr<RegexNode> op) : operand(op) {}
+    void print() const override {
+        std::cout << "KleeneStar(";
+        operand->print();
+        std::cout << ")";
+    }
+};
+
 /**
- * Copies states and transitions from one nfa to another
+ * nfa_append - Copies states and transitions from one nfa to another
  */
 static void nfa_append(nfa *src, nfa* dest)
 {
@@ -222,13 +278,149 @@ static void kleene_construct(nfa* a, nfa* result)
 }
 
 /**
- * Constructs a non-deterministic automaton from a regexp
+ * Constructs a non-deterministic automaton from a tree of operations 
+ * (kleene, concatenation, union(
+ *
+ * Args:
+ *      nfa : An empty but initialized nfa object
+ *      node: The root when first callind
+ *
+ * Returns:
+ *      -1 if failure
  */
-static void thompson_construction(nfa* nfa)
+static int thompson_construction(nfa* nfa, std::shared_ptr<RegexNode> node)
 {
-    cout << "Converting regexp to nfa" << endl;
-    //TODO: parse the regexp and build NFA
-    cout << GLOBAL_REGEXP << endl;
+    const std::type_info& type = typeid(node);
+    struct nfa nfa_left, nfa_right;
+
+    if(type == typeid(Concatenation)) {
+        thompson_construction(&nfa_left, node->left);
+        thompson_construction(&nfa_right, node->right);
+        concat_construct(&nfa_left, &nfa_right, nfa);
+    } else if (type == typeid(Union)) {
+        thompson_construction(&nfa_left, node->left);
+        thompson_construction(&nfa_right, node->right);
+        union_construct(&nfa_left, &nfa_right, nfa);
+    } else {
+        kleene_construct(&nfa);
+    } 
+    
+    return EXIT_SUCCESS;
+}
+
+
+/**
+ * re_tokenize - Given a regexp, returns a stream of tokens representing
+ * all the elements of the regexp.
+ */
+static std::vector<std::string> re_tokenize(const std::string &regex) {
+    std::vector<std::string> tokens;
+    std::string token;
+    bool inClass = false;
+
+    for (size_t i = 0; i < regex.size(); ++i) {
+        char c = regex[i];
+
+        if (c == '[') {
+            inClass = true;
+            token += c;
+        } else if (c == ']') {
+            inClass = false;
+            token += c;
+            tokens.push_back(token);
+            token.clear();
+        } else if (inClass || (isalnum(c) && !token.empty() && isalnum(token.back()))) {
+            token += c;
+        } else {
+            if (!token.empty()) {
+                tokens.push_back(token);
+                token.clear();
+            }
+            if (c == '(' || c == ')' || c == '|' || c == '*' || c == '·') {
+                tokens.push_back(std::string(1, c));
+            } else if (isalnum(c)) {
+                token += c;
+            }
+        }
+    }
+    if (!token.empty()) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+/**
+ * re_to_postfix - Given a stream of tokens reprensenting a regexp in the infix
+ * format, convert it to postfix using the shunting yard algorithm.
+ */
+static std::vector<std::string> re_to_postfix(const std::vector<std::string> &tokens) {
+    std::vector<std::string> output;
+    std::stack<std::string> operators;
+    std::unordered_map<std::string, int> precedence = {{"*", 3}, {"·", 2}, {"|", 1}};
+    std::unordered_map<std::string, bool> rightAssociative = {{"*", true}, {"·", false}, {"|", false}};
+
+    auto isOperator = [&](const std::string &token) {
+        return precedence.find(token) != precedence.end();
+    };
+
+    for (const auto &token : tokens) {
+        if (isalnum(token[0]) || token == " " || token[0] == '[') {
+            output.push_back(token);
+        } else if (token == "(") {
+            operators.push(token);
+        } else if (token == ")") {
+            while (!operators.empty() && operators.top() != "(") {
+                output.push_back(operators.top());
+                operators.pop();
+            }
+            operators.pop(); // Pop the '('
+        } else if (isOperator(token)) {
+            while (!operators.empty() && operators.top() != "(" &&
+                   (precedence[operators.top()] > precedence[token] ||
+                    (precedence[operators.top()] == precedence[token] && !rightAssociative[token]))) {
+                output.push_back(operators.top());
+                operators.pop();
+            }
+            operators.push(token);
+        }
+    }
+
+    while (!operators.empty()) {
+        output.push_back(operators.top());
+        operators.pop();
+    }
+
+    return output;
+}
+
+/**
+ * build_thompson_tree - Build a tree from a stream of regexp tokens in the 
+ * postfix format.
+ */
+static std::shared_ptr<RegexNode> build_thompson_tree(
+    const std::vector<std::string> &postfixTokens
+) {
+    std::stack<std::shared_ptr<RegexNode>> nodeStack;
+
+    for (const auto &token : postfixTokens) {
+        if (token == "*") {
+            auto operand = nodeStack.top(); nodeStack.pop();
+            nodeStack.push(std::make_shared<KleeneStar>(operand));
+        } else if (token == "|") {
+            auto right = nodeStack.top(); nodeStack.pop();
+            auto left = nodeStack.top(); nodeStack.pop();
+            nodeStack.push(std::make_shared<Union>(left, right));
+        } else if (token == "·") {
+            auto right = nodeStack.top(); nodeStack.pop();
+            auto left = nodeStack.top(); nodeStack.pop();
+            nodeStack.push(std::make_shared<Concatenation>(left, right));
+        } else {
+            // Handle literal or character class
+            nodeStack.push(std::make_shared<Literal>(token)); // Simplified, assumes token is a valid literal
+        }
+    }
+
+    return nodeStack.top();
 }
 
 /**
@@ -237,7 +429,6 @@ static void thompson_construction(nfa* nfa)
  */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
-    cout << "Converting nfa to dfa" << endl;
     //TODO: Build DFA from NFA
 }
 
@@ -246,7 +437,6 @@ static void subset_construction(nfa* nfa, dfa* dfa)
  */
 static void minimize_dfa(dfa* dfa)
 {
-    cout << "Minimizing the dfa" << endl;
     //TODO: Minimize the DFA
 }
 
@@ -255,7 +445,6 @@ static void minimize_dfa(dfa* dfa)
  */
 static void generate_scanner_code(dfa* dfa)
 {
-    cout << "Generate scanner C++ code as a file." << endl;
 }
 
 /**
@@ -269,9 +458,22 @@ int construct_scanner()
     nfa* nfa;
     dfa * dfa;
     char* code = (char*)malloc(0);
-    thompson_construction(nfa);
+
+    auto tokens = re_tokenize(GLOBAL_REGEXP);
+    auto postfixTokens = re_to_postfix(tokens);
+    std::shared_ptr<RegexNode> tree = build_thompson_tree(postfixTokens);
+
+    std::cout << "Tree of operations: ";
+    tree->print();
+    std::cout << std::endl;
+
+    cout << "Converting regexp to nfa" << endl;
+    thompson_construction(nfa, tree);
+    cout << "Converting nfa to dfa" << endl;
     subset_construction(nfa, dfa);
+    cout << "Minimizing the dfa" << endl;
     minimize_dfa(dfa);
+    cout << "Generate scanner C++ code as a file." << endl;
     generate_scanner_code(dfa);
 
     free(code);
