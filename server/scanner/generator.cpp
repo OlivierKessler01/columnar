@@ -245,36 +245,36 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
  *            v          v
  *        (New Accepting State)
  */
-static void kleene_construct(nfa* a, nfa* result)
+static void kleene_construct(nfa* a)
 {
-    //Copy state and transitions from a and b to result
-    nfa_append(a,result);
+    std::string old_start, old_accept;
+    old_start = a->start;
+    old_accept = a->accept;
 
     delta empty = delta{};
-    empty.from = result->start;
-    empty.to = result->accept;
+    empty.from = a->start;
+    empty.to = a->accept;
     empty.epsilon = true;
 
-
     delta to_a = delta{};
-    to_a.from = result->start;
-    to_a.to = a->start;
+    to_a.from = a->start;
+    to_a.to = old_start;
     to_a.epsilon = true;
 
     delta feedback = delta{};
-    feedback.from = a->accept;
-    feedback.to = a->start;
+    feedback.from = old_accept;
+    feedback.to = old_start;
     empty.epsilon = true;
 
     delta stop = delta{};
-    stop.from = a->accept;
-    stop.to = result->accept;
+    stop.from = old_accept;
+    stop.to = a->accept;
     stop.epsilon = true;
 
-    result->deltas[result->start].push_back(empty);
-    result->deltas[result->start].push_back(to_a);
-    result->deltas[a->accept].push_back(feedback);
-    result->deltas[a->accept].push_back(stop);
+    a->deltas[a->start].push_back(empty);
+    a->deltas[a->start].push_back(to_a);
+    a->deltas[old_accept].push_back(feedback);
+    a->deltas[old_accept].push_back(stop);
 }
 
 /**
@@ -302,7 +302,7 @@ static int thompson_construction(nfa* nfa, std::shared_ptr<RegexNode> node)
         thompson_construction(&nfa_right, node->right);
         union_construct(&nfa_left, &nfa_right, nfa);
     } else {
-        kleene_construct(&nfa);
+        kleene_construct(nfa);
     } 
     
     return EXIT_SUCCESS;
@@ -336,7 +336,7 @@ static std::vector<std::string> re_tokenize(const std::string &regex) {
                 tokens.push_back(token);
                 token.clear();
             }
-            if (c == '(' || c == ')' || c == '|' || c == '*' || c == '·') {
+            if (c == '(' || c == ')' || c == '|' || c == '*' || c == '\xB7') {
                 tokens.push_back(std::string(1, c));
             } else if (isalnum(c)) {
                 token += c;
@@ -553,9 +553,8 @@ int test_kleene_construct()
 {
     nfa a,result;
     allocate_nfa(&a);
-    allocate_nfa(&result);
 
-    kleene_construct(&a, &result);
+    kleene_construct(&a);
 
     assert(result.deltas.at(result.start).size() == 2);
     assert(result.deltas.at(a.accept).size() == 2);
