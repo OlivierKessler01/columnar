@@ -61,58 +61,64 @@ namespace uuid {
 }
 
 // Base struct for a regex node
-struct RegexNode {
-    virtual ~RegexNode() = default;
-    virtual void print() const = 0;
-};
-
-// Struct for literal characters or strings
-struct Literal : public RegexNode {
+struct regex_node {
+    std::shared_ptr<regex_node> left;
+    std::shared_ptr<regex_node> right;
     std::string value;
-    Literal(const std::string& val) : value(val) {}
-    void print() const override {
+    int type; //0 for literal, 1 for union, 2 for concat, 3 for kleene
+
+    regex_node(
+        int t,
+        std::shared_ptr<regex_node> l,
+        std::shared_ptr<regex_node> r,
+        std::string v
+    ): type(t), left(l), right(r), value(v) {}
+    
+    void print() {
+        if(type == 0) {
+            print_literal();
+        } else if (type == 1) {
+            print_union();
+        } else if (type == 2) {
+            print_concat();
+        } else if (type == 3) {
+            print_kleene();
+        } else {
+            std::cout << "Wrong Regex node type" << std::endl;
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    void print_literal() {
         std::cout << "Literal(" << value << ")";
     }
-};
 
-// Struct for union operation (alternation)
-struct Union : public RegexNode {
-    std::shared_ptr<RegexNode> left;
-    std::shared_ptr<RegexNode> right;
-    Union(std::shared_ptr<RegexNode> l, std::shared_ptr<RegexNode> r) : left(l), right(r) {}
-    void print() const override {
+    void print_union() {
         std::cout << "Union(";
         left->print();
         std::cout << ", ";
         right->print();
         std::cout << ")";
     }
-};
 
-// Struct for concatenation operation
-struct Concatenation : public RegexNode {
-    std::shared_ptr<RegexNode> left;
-    std::shared_ptr<RegexNode> right;
-    Concatenation(std::shared_ptr<RegexNode> l, std::shared_ptr<RegexNode> r) : left(l), right(r) {}
-    void print() const override {
+    void print_concat() {
         std::cout << "Concat(";
         left->print();
         std::cout << ", ";
         right->print();
         std::cout << ")";
     }
-};
-
-// Struct for Kleene star operation
-struct KleeneStar : public RegexNode {
-    std::shared_ptr<RegexNode> operand;
-    KleeneStar(std::shared_ptr<RegexNode> op) : operand(op) {}
-    void print() const override {
+    
+    //left will be used to store the only operand for a kleene's closure
+    void print_kleene() {
         std::cout << "KleeneStar(";
-        operand->print();
+        left->print();
         std::cout << ")";
     }
 };
+
+
+
 
 /**
  * nfa_append - Copies states and transitions from one nfa to another
@@ -288,22 +294,25 @@ static void kleene_construct(nfa* a)
  * Returns:
  *      -1 if failure
  */
-static int thompson_construction(nfa* nfa, std::shared_ptr<RegexNode> node)
+static int thompson_construction(nfa* nfa, std::shared_ptr<regex_node> node)
 {
-    const std::type_info& type = typeid(node);
     struct nfa nfa_left, nfa_right;
-
-    if(type == typeid(Concatenation)) {
+    
+    if(node->type == 2) {
         thompson_construction(&nfa_left, node->left);
         thompson_construction(&nfa_right, node->right);
         concat_construct(&nfa_left, &nfa_right, nfa);
-    } else if (type == typeid(Union)) {
+    } else if (node->type == 1) {
         thompson_construction(&nfa_left, node->left);
         thompson_construction(&nfa_right, node->right);
         union_construct(&nfa_left, &nfa_right, nfa);
-    } else {
+    } else if (node->type == 3) {
         kleene_construct(nfa);
-    } 
+    } else if (node->type == 0) {
+    } else {
+        cout << "Wrong regex node type" << endl;
+        exit(EXIT_FAILURE);
+    }
     
     return EXIT_SUCCESS;
 }
@@ -397,26 +406,26 @@ static std::vector<std::string> re_to_postfix(const std::vector<std::string> &to
  * build_thompson_tree - Build a tree from a stream of regexp tokens in the 
  * postfix format.
  */
-static std::shared_ptr<RegexNode> build_thompson_tree(
+static std::shared_ptr<regex_node> build_thompson_tree(
     const std::vector<std::string> &postfixTokens
 ) {
-    std::stack<std::shared_ptr<RegexNode>> nodeStack;
+    std::stack<std::shared_ptr<regex_node>> nodeStack;
 
     for (const auto &token : postfixTokens) {
         if (token == "*") {
             auto operand = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<KleeneStar>(operand));
+            nodeStack.push(std::make_shared<regex_node>(3, operand, NULL, NULL));
         } else if (token == "|") {
             auto right = nodeStack.top(); nodeStack.pop();
             auto left = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<Union>(left, right));
+            nodeStack.push(std::make_shared<regex_node>(1, left, right, NULL));
         } else if (token == "·") {
             auto right = nodeStack.top(); nodeStack.pop();
             auto left = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<Concatenation>(left, right));
+            nodeStack.push(std::make_shared<regex_node>(2, left, right, NULL));
         } else {
             // Handle literal or character class
-            nodeStack.push(std::make_shared<Literal>(token)); // Simplified, assumes token is a valid literal
+            nodeStack.push(std::make_shared<regex_node>(0, NULL, NULL, token)); // Simplified, assumes token is a valid literal
         }
     }
 
@@ -461,7 +470,7 @@ int construct_scanner()
 
     auto tokens = re_tokenize(GLOBAL_REGEXP);
     auto postfixTokens = re_to_postfix(tokens);
-    std::shared_ptr<RegexNode> tree = build_thompson_tree(postfixTokens);
+    std::shared_ptr<regex_node> tree = build_thompson_tree(postfixTokens);
 
     std::cout << "Tree of operations: ";
     tree->print();
