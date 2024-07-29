@@ -62,26 +62,26 @@ namespace uuid {
 
 // Base struct for a regex node
 struct regex_node {
+    int variant; //0 for literal, 1 for union, 2 for concat, 3 for kleene
     std::shared_ptr<regex_node> left;
     std::shared_ptr<regex_node> right;
     std::string value;
-    int type; //0 for literal, 1 for union, 2 for concat, 3 for kleene
 
     regex_node(
         int t,
-        std::shared_ptr<regex_node> l,
-        std::shared_ptr<regex_node> r,
-        std::string v
-    ): type(t), left(l), right(r), value(v) {}
+        std::shared_ptr<regex_node> l = nullptr,
+        std::shared_ptr<regex_node> r = nullptr,
+        std::string v = ""
+    ): variant(t), left(l), right(r), value(v) {}
     
     void print() {
-        if(type == 0) {
+        if(variant == 0) {
             print_literal();
-        } else if (type == 1) {
+        } else if (variant == 1) {
             print_union();
-        } else if (type == 2) {
+        } else if (variant == 2) {
             print_concat();
-        } else if (type == 3) {
+        } else if (variant == 3) {
             print_kleene();
         } else {
             std::cout << "Wrong Regex node type" << std::endl;
@@ -297,17 +297,17 @@ static int thompson_construction(nfa* nfa, std::shared_ptr<regex_node> node)
 {
     struct nfa nfa_left, nfa_right;
     
-    if(node->type == 2) {
+    if(node->variant == 2) {
         thompson_construction(&nfa_left, node->left);
         thompson_construction(&nfa_right, node->right);
         concat_construct(&nfa_left, &nfa_right, nfa);
-    } else if (node->type == 1) {
+    } else if (node->variant == 1) {
         thompson_construction(&nfa_left, node->left);
         thompson_construction(&nfa_right, node->right);
         union_construct(&nfa_left, &nfa_right, nfa);
-    } else if (node->type == 3) {
+    } else if (node->variant == 3) {
         kleene_construct(nfa);
-    } else if (node->type == 0) {
+    } else if (node->variant == 0) {
     } else {
         cout << "Wrong regex node type" << endl;
         exit(EXIT_FAILURE);
@@ -413,18 +413,18 @@ static std::shared_ptr<regex_node> build_thompson_tree(
     for (const auto &token : postfixTokens) {
         if (token == "*") {
             auto operand = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<regex_node>(3, operand, NULL, NULL));
+            nodeStack.push(std::make_shared<regex_node>(3, operand, nullptr, ""));
         } else if (token == "|") {
             auto right = nodeStack.top(); nodeStack.pop();
             auto left = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<regex_node>(1, left, right, NULL));
+            nodeStack.push(std::make_shared<regex_node>(1, left, right, ""));
         } else if (token == "·") {
             auto right = nodeStack.top(); nodeStack.pop();
             auto left = nodeStack.top(); nodeStack.pop();
-            nodeStack.push(std::make_shared<regex_node>(2, left, right, NULL));
+            nodeStack.push(std::make_shared<regex_node>(2, left, right, ""));
         } else {
             // Handle literal or character class
-            nodeStack.push(std::make_shared<regex_node>(0, NULL, NULL, token)); // Simplified, assumes token is a valid literal
+            nodeStack.push(std::make_shared<regex_node>(0, nullptr, nullptr, token)); // Simplified, assumes token is a valid literal
         }
     }
 
