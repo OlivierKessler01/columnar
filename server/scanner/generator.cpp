@@ -89,35 +89,34 @@ struct regex_node {
         }
     }
 
-    void print_literal() {
-        std::cout << "Literal(" << value << ")";
-    }
+    private:
+        void print_literal() {
+            std::cout << "Literal(" << value << ")";
+        }
 
-    void print_union() {
-        std::cout << "Union(";
-        left->print();
-        std::cout << ", ";
-        right->print();
-        std::cout << ")";
-    }
+        void print_union() {
+            std::cout << "Union(";
+            left->print();
+            std::cout << ", ";
+            right->print();
+            std::cout << ")";
+        }
 
-    void print_concat() {
-        std::cout << "Concat(";
-        left->print();
-        std::cout << ", ";
-        right->print();
-        std::cout << ")";
-    }
-    
-    //left will be used to store the only operand for a kleene's closure
-    void print_kleene() {
-        std::cout << "KleeneStar(";
-        left->print();
-        std::cout << ")";
-    }
+        void print_concat() {
+            std::cout << "Concat(";
+            left->print();
+            std::cout << ", ";
+            right->print();
+            std::cout << ")";
+        }
+        
+        //left will be used to store the only operand for a kleene's closure
+        void print_kleene() {
+            std::cout << "KleeneStar(";
+            left->print();
+            std::cout << ")";
+        }
 };
-
-
 
 
 /**
