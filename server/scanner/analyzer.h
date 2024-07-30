@@ -4,27 +4,31 @@
 #include <unordered_map> 
 #include <iostream>
 #include <vector>
+#include <random>
+#include <sstream>
 
 using namespace std;
+
 
 
 /**
  * Transition function for an NFA/DFA
  */
-typedef struct delta {
+struct delta {
     string from;
     union {
         char input; 
         bool epsilon;
     };
     string to;
-} delta;
+};
 
 typedef struct nfa {
     string start;
     string accept;
     unordered_map<string, vector<delta>> deltas; // [state_uid -> deltas...]
 } nfa;
+
 
 typedef struct dfa {
     string start;

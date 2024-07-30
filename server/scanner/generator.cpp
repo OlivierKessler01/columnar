@@ -187,11 +187,6 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 }
 
 
-static void allocate_nfa(nfa* nfa)
-{
-    nfa->start = uuid::generate_uuid_v4();
-    nfa->accept = uuid::generate_uuid_v4();
-}
 
 
 /**
@@ -284,7 +279,7 @@ static void kleene_construct(nfa* a)
 
 /**
  * Constructs a non-deterministic automaton from a tree of operations 
- * (kleene, concatenation, union(
+ * (kleene, concatenation, union)
  *
  * Args:
  *      nfa : An empty but initialized nfa object
@@ -295,8 +290,22 @@ static void kleene_construct(nfa* a)
  */
 static int thompson_construction(nfa* nfa, std::shared_ptr<regex_node> node)
 {
-    struct nfa nfa_left, nfa_right;
-    
+    if (!node) {
+        return EXIT_FAILURE;
+    }
+    struct nfa nfa_left = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa nfa_right = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+
     if(node->variant == 2) {
         thompson_construction(&nfa_left, node->left);
         thompson_construction(&nfa_right, node->right);
@@ -463,12 +472,18 @@ static void generate_scanner_code(dfa* dfa)
  */
 int construct_scanner()
 {
-    nfa* nfa;
+    nfa nfa = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
     dfa * dfa;
     char* code = (char*)malloc(0);
 
     auto tokens = re_tokenize(GLOBAL_REGEXP);
     auto postfixTokens = re_to_postfix(tokens);
+    std::cout << "Build thompson tree" << endl;
     std::shared_ptr<regex_node> tree = build_thompson_tree(postfixTokens);
 
     std::cout << "Tree of operations: ";
@@ -476,13 +491,13 @@ int construct_scanner()
     std::cout << std::endl;
 
     cout << "Converting regexp to nfa" << endl;
-    thompson_construction(nfa, tree);
+    thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
-    subset_construction(nfa, dfa);
+    //subset_construction(nfa, dfa);
     cout << "Minimizing the dfa" << endl;
-    minimize_dfa(dfa);
+    //minimize_dfa(dfa);
     cout << "Generate scanner C++ code as a file." << endl;
-    generate_scanner_code(dfa);
+    //generate_scanner_code(dfa);
 
     free(code);
     return 0;
@@ -494,10 +509,24 @@ int construct_scanner()
 
 int test_concat_construct()
 {
-    nfa a,b,result;
-    allocate_nfa(&a);
-    allocate_nfa(&b);
-    allocate_nfa(&result);
+    struct nfa a = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa b = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa result = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
 
     //A
     delta first;
@@ -526,10 +555,24 @@ int test_concat_construct()
 
 int test_union_construct()
 {
-    nfa a,b,result;
-    allocate_nfa(&a);
-    allocate_nfa(&b);
-    allocate_nfa(&result);
+    struct nfa a = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa b = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa result = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
 
     //A
     delta first;
@@ -559,8 +602,18 @@ int test_union_construct()
 
 int test_kleene_construct()
 {
-    nfa a,result;
-    allocate_nfa(&a);
+    struct nfa a = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
+    struct nfa result = 
+    {
+        uuid::generate_uuid_v4(),
+        uuid::generate_uuid_v4(),  
+        unordered_map<string, vector<delta>>()
+    };
 
     kleene_construct(&a);
 
