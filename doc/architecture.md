@@ -108,13 +108,20 @@ until meeting the end of the string or an element that doesn't match the token c
 The principle of priority ordering is used, meaning if a buffer matches multiple token classes regular expressions,
 the highest priority token class will be declared.
 
-To architect this Lexer, the following phases have been used :
+To architect this Lexer generator, the following phases have been used :
 
 - Define regular expressions for each token class of the language
 - Run the Thompson construction to convert the regexp to a non-deterministic finite automaton
 - Convert the NFA to DFA using the "subset construction"
+- Minimize the DFA
+- Generate the scanner C code from the DFA
 
-#### **Non-deterministic finite automata schema**
+Once the scanner C code is there, you can simply link it and call it. It will return 
+an array of tuples (lexeme, category).
+
+This you can feed to the parser.
+
+#### **Non-deterministic finite automata ecample**
 ![Non-definite automata](lexer-ndfa.drawio.png)
 
 #### **Deterministic finite automata schema**
@@ -136,7 +143,6 @@ language, thus throw a Synthax Error.
 
 ### 4. Intermediate execution plan generator
  This phase's goal is the generate an execution plan from the elements understood in the previous phases.
- An execution plan is
 
 ### 5. Execution plan optimizer
 
