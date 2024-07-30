@@ -493,7 +493,7 @@ int construct_scanner()
     cout << "Converting regexp to nfa" << endl;
     thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
-    //subset_construction(nfa, dfa);
+    subset_construction(nfa, dfa);
     cout << "Minimizing the dfa" << endl;
     //minimize_dfa(dfa);
     cout << "Generate scanner C++ code as a file." << endl;

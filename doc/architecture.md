@@ -1,5 +1,10 @@
 # Architecture
 
+## Client/Server networking/OS specifics
+
+
+![Network](network.png)
+
 ## Data storage
 
 In a old-school fashion, Columnar stores data mapping table columns to individual files
