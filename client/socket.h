@@ -10,4 +10,4 @@
 
 int sock_connect(char* host, int port);
 
-char* send_request(char* req, int req_len, int client_sock, char* response);
+int send_request(char* req, int req_len, int client_sock, char* response);

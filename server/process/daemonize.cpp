@@ -99,7 +99,7 @@ static int process_request(int max_req_len, int accepted_fd){
 }
 
 /**
- * run() - Listens on a socker for incoming connections, once
+ * run() - Listens on a socket for incoming connections, once
  * one comes, spawns a child process to treat the request.
  */
 static int run(int port, int max_req_len, char* log_file_path) {
@@ -252,8 +252,7 @@ void build_daemon(configuration_t config)
     close(STDERR_FILENO);
 
     /* Close all open file descriptors */
-    for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
-    {
+    for (x = sysconf(_SC_OPEN_MAX); x>=0; x--) {
         close (x);
     }
 

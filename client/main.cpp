@@ -84,7 +84,10 @@ int main(int argc, char** argv)
             close(pipefd[0]);
             //send the result of the server request to the parent process
             int client_sock = sock_connect(host, port);
-            send_request(req, strlen(req), client_sock, response);
+            if (int res = (send_request(req, strlen(req), client_sock, response)) < 0){
+                perror("Request failed.");
+                exit(EXIT_FAILURE);
+            }
             write(pipefd[1], response, strlen(response));
             free(response);
             // closing the connected socket

@@ -19,16 +19,18 @@ void clear_buffer(char buffer[], int number_elements) {
  * Then sets it in the configuration object.
  */
 int set_configuration_parameter(
-        char name_buffer[PARAMETER_NAME_BUFFER_SIZE],
-        char value_buffer[PARAMETER_VALUE_BUFFER_SIZE],
-        configuration_t *config) {
+    char name_buffer[PARAMETER_NAME_BUFFER_SIZE],
+    char value_buffer[PARAMETER_VALUE_BUFFER_SIZE],
+    configuration_t *config
+) {
+
+    int i, length;
+    FILE * log_file_p;
 
     if(strcmp(name_buffer, "log_file_path") == 0) {
-        FILE * log_file_p;
         log_file_p = fopen(value_buffer, "a");
 
-        if (log_file_p == NULL)
-        {
+        if (log_file_p == NULL) {
             perror("The value provided for log_file_path in the configuration file"
             " isn't a writable file.\n");
             exit(EXIT_FAILURE);
@@ -38,8 +40,7 @@ int set_configuration_parameter(
 
         fclose(log_file_p);
     } else if (strcmp(name_buffer, "tcp_port") == 0) {
-        int length;
-        int i = 0;
+        i = 0;
         length = strlen(value_buffer);
 
         for (i=0;i<length; i++) {

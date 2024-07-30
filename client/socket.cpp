@@ -34,7 +34,10 @@ int sock_connect(char* host, int port)
     return client_sock;
 }
 
-char* send_request(char* req, int req_len, int client_sock, char* response) {
+/**
+ * send_request - Send a SQL over the wire, fills the response.
+ */
+int send_request(char* req, int req_len, int client_sock, char* response) {
     send(client_sock, req, req_len, 0);
     char buffer[500];
     ssize_t bytes_read;
@@ -66,5 +69,5 @@ char* send_request(char* req, int req_len, int client_sock, char* response) {
     }
     response = new_response;
     response[resp_len] = '\n';
-    return response;
+    return EXIT_SUCCESS;
 }
