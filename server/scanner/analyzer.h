@@ -14,19 +14,21 @@ using namespace std;
 /**
  * Transition function for an NFA/DFA
  */
-struct delta {
-    string from;
-    union {
-        char input; 
-        bool epsilon;
-    };
+typedef struct {
+    char input; 
     string to;
-};
+} delta;
+
+typedef struct {
+   string name;
+   unordered_map<string, vector<delta>> deltas; // [to -> delta...]
+   unordered_map<string, vector<delta>> epsilon_deltas; // [to -> delta...]
+} state;
 
 typedef struct nfa {
     string start;
     string accept;
-    unordered_map<string, vector<delta>> deltas; // [state_uid -> deltas...]
+    unordered_map<string, state> states; // [state_uid -> state...]
 } nfa;
 
 

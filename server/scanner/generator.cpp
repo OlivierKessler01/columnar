@@ -124,12 +124,8 @@ struct regex_node {
  */
 static void nfa_append(nfa *src, nfa* dest)
 {
-    for (const auto& [key, value] : src->deltas){
-        dest->deltas[key].insert(
-            dest->deltas[key].end(),
-            src->deltas[key].begin(),
-            src->deltas[key].end()
-        );
+   for (const auto& [key, value] : src->states) {
+        dest->states[key] = value; // Insert or overwrite the value for the key
     }
 }
 
@@ -162,28 +158,21 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
     nfa_append(b,result);
     
     delta first = delta{};
-    first.from = result->start;
     first.to = a->start;
-    first.epsilon = true;
-    result->deltas[result->start].push_back(first);
+    result->states[result->start].epsilon_deltas[a->start].push_back(first);
 
     delta second = delta{};
-    second.from = result->start;
     second.to = b->start;
-    second.epsilon = true;
-    result->deltas[result->start].push_back(second);
+    result->states[result->start].epsilon_deltas[b->start].push_back(first);
 
     delta third = delta{};
-    third.from = a->accept;
     third.to = result->accept;
-    third.epsilon = true;
-    result->deltas[a->accept].push_back(third);
+    result->states[a->accept].epsilon_deltas[result->accept].push_back(third);
 
     delta fourth = delta{};
-    fourth.from = b->accept;
     fourth.to = result->accept;
-    third.epsilon = true;
-    result->deltas[b->accept].push_back(fourth);
+
+    result->states[b->accept].epsilon_deltas[result->accept].push_back(third);
 }
 
 
@@ -216,10 +205,9 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
 
     //Add the epsilon transitions
     delta first = delta{};
-    first.from = a->accept;
     first.to = b->start;
-    first.epsilon = true;
-    result->deltas[a->accept].push_back(first);
+
+    result->states[a->accept].epsilon_deltas[b->start].push_back(first);
 }
 
 /**
@@ -251,30 +239,36 @@ static void kleene_construct(nfa* a)
     old_start = a->start;
     old_accept = a->accept;
 
+    state new_start = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+    state new_accept = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+
+    a->start = new_start.name;
+    a->accept = new_accept.name;
+
     delta empty = delta{};
-    empty.from = a->start;
     empty.to = a->accept;
-    empty.epsilon = true;
 
     delta to_a = delta{};
-    to_a.from = a->start;
     to_a.to = old_start;
-    to_a.epsilon = true;
 
     delta feedback = delta{};
-    feedback.from = old_accept;
     feedback.to = old_start;
-    empty.epsilon = true;
 
     delta stop = delta{};
-    stop.from = old_accept;
     stop.to = a->accept;
-    stop.epsilon = true;
 
-    a->deltas[a->start].push_back(empty);
-    a->deltas[a->start].push_back(to_a);
-    a->deltas[old_accept].push_back(feedback);
-    a->deltas[old_accept].push_back(stop);
+    a->states[new_start.name].epsilon_deltas[a->accept].push_back(empty);
+    a->states[new_start.name].epsilon_deltas[old_start].push_back(to_a);
+    a->states[old_accept].epsilon_deltas[old_start].push_back(feedback);
+    a->states[old_accept].epsilon_deltas[a->accept].push_back(stop);
 }
 
 /**
@@ -297,13 +291,13 @@ static int thompson_construction(nfa* nfa, std::shared_ptr<regex_node> node)
     {
         uuid::generate_uuid_v4(),
         uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
+        unordered_map<string, state>()
     };
     struct nfa nfa_right = 
     {
         uuid::generate_uuid_v4(),
         uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
+        unordered_map<string, state>()
     };
 
     if(node->variant == 2) {
@@ -410,6 +404,22 @@ static std::vector<std::string> re_to_postfix(const std::vector<std::string> &to
     return output;
 }
 
+void initialize_nfa(nfa* nfa)
+{
+    state start = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+    state accept = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+    nfa->states[start.name] = start;
+    nfa->states[accept.name] = accept;
+}
+
 /**
  * build_thompson_tree - Build a tree from a stream of regexp tokens in the 
  * postfix format.
@@ -447,6 +457,7 @@ static std::shared_ptr<regex_node> build_thompson_tree(
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
     //TODO: Build DFA from NFA
+    printf("test");
 }
 
 /**
@@ -472,15 +483,12 @@ static void generate_scanner_code(dfa* dfa)
  */
 int construct_scanner()
 {
-    nfa nfa = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
+    nfa nfa;
+    initialize_nfa(&nfa);
+
     dfa * dfa;
     char* code = (char*)malloc(0);
-
+        
     auto tokens = re_tokenize(GLOBAL_REGEXP);
     auto postfixTokens = re_to_postfix(tokens);
     std::cout << "Build thompson tree" << endl;
@@ -493,7 +501,7 @@ int construct_scanner()
     cout << "Converting regexp to nfa" << endl;
     thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
-    subset_construction(nfa, dfa);
+    subset_construction(&nfa, dfa);
     cout << "Minimizing the dfa" << endl;
     //minimize_dfa(dfa);
     cout << "Generate scanner C++ code as a file." << endl;
@@ -509,24 +517,10 @@ int construct_scanner()
 
 int test_concat_construct()
 {
-    struct nfa a = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
-    struct nfa b = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
-    struct nfa result = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
+    nfa a,b, result;
+    initialize_nfa(&a);
+    initialize_nfa(&b);
+    initialize_nfa(&result);
 
     //A
     delta first;
@@ -555,24 +549,10 @@ int test_concat_construct()
 
 int test_union_construct()
 {
-    struct nfa a = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
-    struct nfa b = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
-    struct nfa result = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
+    nfa a,b, result;
+    initialize_nfa(&a);
+    initialize_nfa(&b);
+    initialize_nfa(&result);
 
     //A
     delta first;
@@ -600,20 +580,14 @@ int test_union_construct()
     return EXIT_SUCCESS;
 }
 
+
 int test_kleene_construct()
 {
-    struct nfa a = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
-    struct nfa result = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, vector<delta>>()
-    };
+
+    nfa a, result;
+    initialize_nfa(&a);
+    initialize_nfa(&result);
+
 
     kleene_construct(&a);
 
