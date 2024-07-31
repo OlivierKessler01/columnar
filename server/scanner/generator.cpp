@@ -421,6 +421,22 @@ void initialize_nfa(nfa* nfa)
 }
 
 /**
+ * e_closure - Takes a set of states, returns a set of states reacheable via only
+ * epsilon transitions/closures.
+ */
+void e_closure(std::vector<state> q, string state_id)
+{
+}
+
+/**
+ * delta_func - Applies the transition function to each element of 
+ * q, given a char c.
+ */
+void delta_func(std::vector<state> q, char c)
+{
+}
+
+/**
  * build_thompson_tree - Build a tree from a stream of regexp tokens in the 
  * postfix format.
  */
@@ -458,6 +474,7 @@ static void subset_construction(nfa* nfa, dfa* dfa)
 {
     //TODO: Build DFA from NFA
     printf("test");
+
 }
 
 /**
