@@ -144,15 +144,15 @@ void initialize_nfa(nfa* nfa)
  * e_closure - Takes a set of states, returns a set of states reacheable via only
  * epsilon transitions/closures.
  */
-void e_closure(std::vector<state> q, string state_id)
+void e_closure(std::vector<state>* q, std::vector<state>* result)
 {
 }
 
 /**
- * delta_func - Applies the transition function to each element of 
+ * delta - Applies the transition function to each element of 
  * q, given a char c.
  */
-void delta_func(std::vector<state> q, char c)
+void delta_func(std::vector<state>* q, std::vector<state>* result,  char c)
 {
 }
 
@@ -165,6 +165,20 @@ static void nfa_append(nfa *src, nfa* dest)
    for (const auto& [key, value] : src->states) {
         dest->states[key] = value; // Insert or overwrite the value for the key
     }
+}
+
+/**
+ * add_delta_nfa - Use this function to add a non-epsilon transition to an nfa
+ * to maintain a correct sigma set.
+ */
+static void add_delta_nfa(nfa* nfa, string from_id, string to_id, char character)
+{
+    delta d;
+    d.input = character;
+    d.to = to_id;
+
+    nfa->states[from_id].deltas[to_id].push_back(d);
+    nfa->sigma.insert(character);
 }
 
 /**
@@ -471,9 +485,31 @@ static std::shared_ptr<regex_node> build_thompson_tree(
  */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
-    //TODO: Build DFA from NFA
-    printf("test");
+    std::vector<state> q0, q, n0_set, t, result;
+    std::vector<std::vector<state>> worklist;
 
+    n0_set.push_back(nfa->states[nfa->start]);
+    e_closure(&n0_set, &q0);
+    //TODO: copy q0 to q
+    //
+    worklist.push_back(q0);
+    
+    std::vector<state> current;
+
+    while (worklist.size() > 0){
+        q.clear();
+        q = worklist.back();
+        worklist.pop_back();     
+
+        for (auto character: nfa->sigma) {
+            result.clear();
+            t.clear();
+            delta_func(&q, &result, character);
+            e_closure(&result, &t); 
+
+        }
+         
+    }
 }
 
 /**
@@ -538,17 +574,8 @@ int test_concat_construct()
     initialize_nfa(&b);
     initialize_nfa(&result);
 
-    //A
-    delta first;
-    first.to = "2";
-    first.input = 'c';
-    a.states[a.start].deltas[a.accept].push_back(first);
-
-    //B
-    delta second;
-    second.to = "4";
-    second.input = 'd';
-    b.states[b.start].deltas[b.accept].push_back(second);
+    add_delta_nfa(&a, a.start, a.accept, 'c');
+    add_delta_nfa(&b, b.start, b.accept, 'd');
 
     concat_construct(&a, &b, &result);
 
@@ -566,17 +593,8 @@ int test_union_construct()
     initialize_nfa(&b);
     initialize_nfa(&result);
 
-    //A
-    delta first;
-    first.to = "2";
-    first.input = 'c';
-    a.states[a.start].deltas[a.accept].push_back(first);
-
-    //B
-    delta second;
-    second.to = "4";
-    second.input = 'd';
-    b.states[b.start].deltas[b.accept].push_back(second);
+    add_delta_nfa(&a, a.start, a.accept, 'c');
+    add_delta_nfa(&b, b.start, b.accept, 'd');
 
     union_construct(&a, &b, &result);
     

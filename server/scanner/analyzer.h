@@ -6,6 +6,7 @@
 #include <vector>
 #include <random>
 #include <sstream>
+#include <set>
 
 using namespace std;
 
@@ -28,6 +29,7 @@ typedef struct {
 typedef struct nfa {
     string start;
     string accept;
+    set<char> sigma; // finite alphabet used by the nfa
     unordered_map<string, state> states; // [state_uid -> state...]
 } nfa;
 
