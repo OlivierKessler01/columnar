@@ -1,3 +1,5 @@
+CC = g++
+CFLAGS = -std=c++20
 
 # The @ makes sure that the command itself isn't echoed in the terminal
 help: # Print help on Makefile
@@ -11,7 +13,7 @@ help: # Print help on Makefile
 
   
 build_server: clean # Build the server 
-	g++ -std=c++20 -g -o columnard server/main.cpp \
+	$(CC) $(CFLAGS) -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp \
 		server/scanner/analyzer.cpp \
 		server/parser/parser.cpp \
@@ -20,7 +22,7 @@ build_server: clean # Build the server
 		-W -Wall -pedantic
 
 build_client: clean #Build the client
-	g++ -std=c++20 -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
+	$(CC) $(CFLAGS) -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
 
 .ONESHELL:
 .PHONY:
@@ -39,28 +41,28 @@ run-dev: server client # Build client and server, then run them
 tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
 
 generate_scanner: clean # Generate the scanner code
-	g++ -std=c++20 -g  -o scanner_ex  \
+	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
 		server/scanner/analyzer.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_ex
 
 test_scanner_generator: clean
-	g++ -std=c++20 -g -DTEST -o scanner_generator_test  \
+	$(CC) $(CFLAGS) -g -DTEST -o scanner_generator_test  \
 		server/scanner/generator.cpp \
 		server/scanner/analyzer.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_generator_test
 
 test_heap: clean  
-	g++ -std=c++20 -g  -DTEST -o heap_test \
+	$(CC) $(CFLAGS) -g  -DTEST -o heap_test \
 		server/dsa/heap/heap.cpp \
 		server/dsa/vector_utils.cpp \
 		-W -Wall -pedantic \
 	&& ./heap_test
 
 test_heap_sort: clean 
-	g++ -std=c++20 -g -o heap_sort_test \
+	$(CC) $(CFLAGS) -g -o heap_sort_test \
 		server/dsa/sort/heap_sort_test.cpp \
 		server/dsa/vector_utils.cpp \
 		server/dsa/sort/heap_sort.cpp \

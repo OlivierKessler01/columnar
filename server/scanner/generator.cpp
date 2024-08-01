@@ -18,6 +18,7 @@
 #include <cstring>
 #include <stack>
 #include <memory>
+#include <csignal>
 
 using std::cout, std::endl;
 
@@ -118,6 +119,43 @@ struct regex_node {
         }
 };
 
+/**
+ * initialize_nfa - Allocates start and stop state for an nfa.
+ */
+void initialize_nfa(nfa* nfa)
+{
+    state start = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+    state accept = state{
+        uuid::generate_uuid_v4(),
+        unordered_map<string, vector<delta>>(),
+        unordered_map<string, vector<delta>>(),
+    };
+    nfa->states[start.name] = start;
+    nfa->states[accept.name] = accept;
+    nfa->start = start.name;
+    nfa->accept = accept.name;
+}
+
+/**
+ * e_closure - Takes a set of states, returns a set of states reacheable via only
+ * epsilon transitions/closures.
+ */
+void e_closure(std::vector<state> q, string state_id)
+{
+}
+
+/**
+ * delta_func - Applies the transition function to each element of 
+ * q, given a char c.
+ */
+void delta_func(std::vector<state> q, char c)
+{
+}
+
 
 /**
  * nfa_append - Copies states and transitions from one nfa to another
@@ -163,7 +201,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 
     delta second = delta{};
     second.to = b->start;
-    result->states[result->start].epsilon_deltas[b->start].push_back(first);
+    result->states[result->start].epsilon_deltas[b->start].push_back(second);
 
     delta third = delta{};
     third.to = result->accept;
@@ -171,8 +209,7 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
 
     delta fourth = delta{};
     fourth.to = result->accept;
-
-    result->states[b->accept].epsilon_deltas[result->accept].push_back(third);
+    result->states[b->accept].epsilon_deltas[result->accept].push_back(fourth);
 }
 
 
@@ -212,6 +249,8 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
 
 /**
  * kleene_constuct - Generates an NFA Kleene's closure (a*) construct from an nfa
+ *
+ * In place algorithm.
  *    
  *
  *        (New Start State)
@@ -287,18 +326,9 @@ static int thompson_construction(nfa* nfa, std::shared_ptr<regex_node> node)
     if (!node) {
         return EXIT_FAILURE;
     }
-    struct nfa nfa_left = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, state>()
-    };
-    struct nfa nfa_right = 
-    {
-        uuid::generate_uuid_v4(),
-        uuid::generate_uuid_v4(),  
-        unordered_map<string, state>()
-    };
+    struct nfa nfa_left, nfa_right;
+    initialize_nfa(&nfa_left);
+    initialize_nfa(&nfa_left);
 
     if(node->variant == 2) {
         thompson_construction(&nfa_left, node->left);
@@ -404,37 +434,6 @@ static std::vector<std::string> re_to_postfix(const std::vector<std::string> &to
     return output;
 }
 
-void initialize_nfa(nfa* nfa)
-{
-    state start = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
-    state accept = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
-    nfa->states[start.name] = start;
-    nfa->states[accept.name] = accept;
-}
-
-/**
- * e_closure - Takes a set of states, returns a set of states reacheable via only
- * epsilon transitions/closures.
- */
-void e_closure(std::vector<state> q, string state_id)
-{
-}
-
-/**
- * delta_func - Applies the transition function to each element of 
- * q, given a char c.
- */
-void delta_func(std::vector<state> q, char c)
-{
-}
 
 /**
  * build_thompson_tree - Build a tree from a stream of regexp tokens in the 
@@ -541,25 +540,21 @@ int test_concat_construct()
 
     //A
     delta first;
-    first.from = "1";
     first.to = "2";
     first.input = 'c';
-
-    a.deltas[first.from].push_back(first);
+    a.states[a.start].deltas[a.accept].push_back(first);
 
     //B
     delta second;
-    second.from = "3";
     second.to = "4";
     second.input = 'd';
-
-    b.deltas[second.from].push_back(second);
+    b.states[b.start].deltas[b.accept].push_back(second);
 
     concat_construct(&a, &b, &result);
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
-    assert(result.deltas.at(a.accept).size() == 1 );
+    assert(result.states[a.accept].epsilon_deltas.size() == 1);
     
     return EXIT_SUCCESS;
 }
@@ -573,43 +568,35 @@ int test_union_construct()
 
     //A
     delta first;
-    first.from = "1";
     first.to = "2";
     first.input = 'c';
-
-    a.deltas[first.from].push_back(first);
+    a.states[a.start].deltas[a.accept].push_back(first);
 
     //B
     delta second;
-    second.from = "3";
     second.to = "4";
     second.input = 'd';
-
-    b.deltas[second.from].push_back(second);
+    b.states[b.start].deltas[b.accept].push_back(second);
 
     union_construct(&a, &b, &result);
-
-    assert(result.deltas.at(result.start).size() == 2);
-    assert(result.deltas.at(b.accept).size() == 1);
-    assert(result.deltas.at(a.accept).size()== 1);
+    
+    assert(result.states[result.start].epsilon_deltas.size() == 2);
+    assert(result.states[result.start].deltas.size() == 0);
+    assert(result.states[a.accept].epsilon_deltas.size() == 1);
+    assert(result.states[b.accept].epsilon_deltas.size() == 1);
     //TODO: Test all deltas
-    //
     return EXIT_SUCCESS;
 }
 
 
 int test_kleene_construct()
 {
-
-    nfa a, result;
+    nfa a;
     initialize_nfa(&a);
-    initialize_nfa(&result);
-
-
     kleene_construct(&a);
 
-    assert(result.deltas.at(result.start).size() == 2);
-    assert(result.deltas.at(a.accept).size() == 2);
+    assert(a.states[a.start].epsilon_deltas.size() == 2);
+    assert(a.states[a.start].deltas.size() == 0);
     return EXIT_SUCCESS;
 }
 
