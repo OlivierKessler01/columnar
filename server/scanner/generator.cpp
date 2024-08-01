@@ -7,6 +7,7 @@
  */
 
 #include <iostream>
+#include <unordered_map>
 #include "analyzer.h"
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
@@ -144,7 +145,7 @@ void initialize_nfa(nfa* nfa)
  * e_closure - Takes a set of states, returns a set of states reacheable via only
  * epsilon transitions/closures.
  */
-void e_closure(std::vector<state>* q, std::vector<state>* result)
+void e_closure(std::set<state>* q, std::set<state>* result)
 {
 }
 
@@ -152,7 +153,7 @@ void e_closure(std::vector<state>* q, std::vector<state>* result)
  * delta - Applies the transition function to each element of 
  * q, given a char c.
  */
-void delta_func(std::vector<state>* q, std::vector<state>* result,  char c)
+void delta_func(std::set<state>* q, std::set<state>* result,  char c)
 {
 }
 
@@ -479,36 +480,72 @@ static std::shared_ptr<regex_node> build_thompson_tree(
     return nodeStack.top();
 }
 
+
+struct set_hash {
+    template <typename T>
+    std::size_t operator()(const T& set) const {
+        std::size_t seed = 0;
+        for (const auto& elem : set) {
+            seed ^= std::hash<decltype(elem)>{}(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
+
+// Equality function for std::set<state>
+struct set_equal {
+    template <typename T>
+    bool operator()(const T& lhs, const T& rhs) const {
+        return lhs == rhs;
+    }
+};
+
 /**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
-    std::vector<state> q0, q, n0_set, t, result;
-    std::vector<std::vector<state>> worklist;
+    std::set<state> q0, q, n0_set, t, result;
+    std::set<std::set<state>> worklist, big_q;
 
-    n0_set.push_back(nfa->states[nfa->start]);
+    std::unordered_map<
+        std::set<state>,
+        std::unordered_map<char, std::set<state>>,
+        set_hash,
+        set_equal
+    > big_t;
+
+    n0_set.insert(nfa->states[nfa->start]);
     e_closure(&n0_set, &q0);
-    //TODO: copy q0 to q
-    //
-    worklist.push_back(q0);
+
+    big_q.insert(q0);
+    worklist.insert(q0);
     
     std::vector<state> current;
 
-    while (worklist.size() > 0){
+    while (!worklist.empty()){
         q.clear();
-        q = worklist.back();
-        worklist.pop_back();     
+
+        // Get an iterator to the first element
+        auto it = worklist.begin();
+        q = *it;
+        // Remove the element from the set
+        worklist.erase(q);
+
 
         for (auto character: nfa->sigma) {
             result.clear();
             t.clear();
             delta_func(&q, &result, character);
             e_closure(&result, &t); 
-
+            big_t[q][character] = t;
+            
+            if (big_q.count(t) == 0) {
+                big_q.insert(t);
+                worklist.insert(t);
+            }
         }
-         
     }
 }
 
@@ -599,7 +636,7 @@ int test_union_construct()
     union_construct(&a, &b, &result);
     
     assert(result.states[result.start].epsilon_deltas.size() == 2);
-    assert(result.states[result.start].deltas.size() == 0);
+    assert(result.states[result.start].deltas.size() == 1);
     assert(result.states[a.accept].epsilon_deltas.size() == 1);
     assert(result.states[b.accept].epsilon_deltas.size() == 1);
     //TODO: Test all deltas
