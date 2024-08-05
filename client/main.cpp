@@ -26,7 +26,6 @@ static void child_reap_handler(int sig)
     int child_pid;
     //Potentialy multiple zombies are queued, make sure to reap them all
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
-        cout << "Child with PID " << child_pid << "terminated" << endl;
     }
 }
 

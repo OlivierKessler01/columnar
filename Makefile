@@ -27,12 +27,12 @@ build_client: clean #Build the client
 .ONESHELL:
 .PHONY:
 server: build_server # Build and launch the server
-	killall columnard
+	@killall columnard 2>/dev/null
 	./columnard
 
 .PHONY:
 client: build_client
-	killall columnarc
+	@killall columnarc 2>/dev/null
 	./columnarc 127.0.0.1 3307
 
 .PHONY:

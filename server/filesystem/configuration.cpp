@@ -9,6 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <sys/syslog.h>
 
 void clear_buffer(char buffer[], int number_elements) {
     memset(buffer, 0, number_elements);
@@ -84,12 +85,12 @@ int load_configuration(configuration_t *config)
     clear_buffer(value_buffer, PARAMETER_VALUE_BUFFER_SIZE);
     clear_buffer(config->log_file_path, PARAMETER_VALUE_BUFFER_SIZE);
 
-    printf("Reading the configuration file\n");
+    syslog(LOG_INFO, "Reading the configuration file.");
     fp = fopen(file_name, "r");
 
     if (fp == NULL)
     {
-        perror("Error while opening the file. Please add /etc/columnar/columnar.cnf\n");
+        syslog(LOG_ERR, "Error while opening the file. Please add /etc/columnar/columnar.cnf.");
         exit(EXIT_FAILURE);
     }
 

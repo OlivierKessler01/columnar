@@ -207,17 +207,11 @@ void build_daemon(configuration_t config)
 
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
-        outputFile << "Failed to open the file for appending." << std::endl;
+        syslog(LOG_ERR, "Failed to open the file for appending.");
         exit(EXIT_FAILURE);
     }
 
-    // Data to append to the file
-    std::string newData = "Columnar server daemon running.";
-
-    // Append data to the file
-    outputFile << newData << std::endl;
-    syslog(LOG_INFO, "%s", newData.c_str());
-
+    syslog(LOG_INFO, "Columnar server daemon running.");
 
     /* On success: The child process becomes session leader */
     if (setsid() < 0)
