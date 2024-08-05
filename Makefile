@@ -74,5 +74,5 @@ clean: # Remove all generated binaries
 	rm -rf columnarc columnard *_test
 
 log-server: # Read the daemon syslogs
-	journalctl -f | grep columnar
+	journalctl -n 100 -f | grep columnar
 

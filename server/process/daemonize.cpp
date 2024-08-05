@@ -28,7 +28,7 @@ static void child_reap_handler(int sig)
     int child_pid;
     //Potentialy multiple zombies are queued, make sure to reap them all
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
-        syslog(LOG_EMERG, "Child with PID %d terminated.", child_pid);
+        syslog(LOG_ERR, "Child with PID %d terminated.", child_pid);
     }
 }
 
@@ -43,7 +43,7 @@ static int process_request(int max_req_len, int accepted_fd){
     int req_acc_len = 0;
     char * req_acc = (char*)malloc(sizeof(char)*0);
     if(req_acc == NULL){
-        syslog(LOG_EMERG, "Error malloc'ing for request buffer");
+        syslog(LOG_ERR, "Error malloc'ing for request buffer");
         exit(EXIT_FAILURE);
     }
     int len_response = 0;
@@ -63,7 +63,7 @@ static int process_request(int max_req_len, int accepted_fd){
 
         req_acc = (char*)realloc(req_acc, new_size);
         if(req_acc == NULL){
-            syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+            syslog(LOG_ERR, "Error realloc'ing for request buffer");
             free(req_acc);
             exit(EXIT_FAILURE);
         }
@@ -87,7 +87,7 @@ static int process_request(int max_req_len, int accepted_fd){
    
     //Run the query (lexe+parser+build query plan+ run query plan)
     if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
-        syslog(LOG_EMERG, "Error realloc'ing for request buffer");
+        syslog(LOG_ERR, "Error realloc'ing for request buffer");
         //outputFile << "Query execution failed." << std::endl;
     }
     free(req_acc);
@@ -119,13 +119,13 @@ static int run(int port, int max_req_len, char* log_file_path) {
    
     //Reap the zombies children if the parent receives a SIGINT
     if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
-        syslog(LOG_EMERG, "Can't add SIGINT signal handler: %s", strerror(errno));
+        syslog(LOG_ERR, "Can't add SIGINT signal handler: %s", strerror(errno));
         exit(EXIT_FAILURE);
     }
 
     // Create a socket
     if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        syslog(LOG_EMERG, "Error creating server socket.");
+        syslog(LOG_ERR, "Error creating server socket.");
         exit(EXIT_FAILURE);
     }
 
@@ -139,30 +139,30 @@ static int run(int port, int max_req_len, char* log_file_path) {
         (struct sockaddr *)&server_addr,
         sizeof(server_addr)
     ) < 0) {
-        syslog(LOG_EMERG, "Error binding socket");
+        syslog(LOG_ERR, "Error binding socket");
         exit(EXIT_FAILURE);
     }
 
     // Listen for incoming connections
     if (listen(listen_fd, 5) < 0) {
-        syslog(LOG_EMERG, "Error listening on socket");
+        syslog(LOG_ERR, "Error listening on socket");
         exit(EXIT_FAILURE);
     }
 
-    syslog(LOG_EMERG, "Server listening on port %d , listen_fd : %d", port, listen_fd);
+    syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", port, listen_fd);
     
     while (1) {
         // Accept incoming connections
         accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
 
         if (accepted_fd < 0) {
-            syslog(LOG_EMERG, "Error accept()ing incoming connection: %s", strerror(errno));
+            syslog(LOG_ERR, "Error accept()ing incoming connection: %s", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
         //A connection has been accepted, run the query in a child process
         if ((child_pid = fork()) < 0) {
-            syslog(LOG_EMERG, "Fork() error: %s", strerror(errno));
+            syslog(LOG_ERR, "Fork() error: %s", strerror(errno));
             exit(EXIT_FAILURE);
         }
         else if(child_pid == 0)
