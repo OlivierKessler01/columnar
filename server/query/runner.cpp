@@ -1,6 +1,5 @@
-#include "../scanner/analyzer.h"
+#include "../scanner/scanner.h"
 #include "../parser/parser.h"
-#include <cstddef>
 #include <cstdlib>
 #include <stdlib.h>
 #include <string.h>
@@ -15,17 +14,18 @@
 ssize_t run_query(char *response, char* query, ssize_t query_len)
 {
     syslog(LOG_INFO, "in run_query() function");
-    token* tokens = NULL;
+    Tokens tokens;
     ssize_t len_tokens, result_parser;
+    
 
     //Run the lexer/scanner
-    if ((len_tokens = lexe(tokens, query, query_len)) == -1) {
+    if ((len_tokens = lexe(&tokens, query, query_len)) == -1) {
         syslog(LOG_INFO, "Wrong request synthax.");
         return -1;
     }
     
     //Run the parser
-    if ((result_parser = parse(tokens, len_tokens)) == -1) {
+    if ((result_parser = parse(&tokens)) == -1) {
         syslog(LOG_INFO, "Wrong request grammar.");
         return -1;
     }

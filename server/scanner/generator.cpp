@@ -7,9 +7,6 @@
  */
 
 #include <iostream>
-#include <unordered_map>
-#include "analyzer.h"
-
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
 #define INTEGER_REGEXP "(0|[1...9][0...9]*)"
 #define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
@@ -17,9 +14,10 @@
 #include <random>
 #include <sstream>
 #include <cstring>
-#include <stack>
 #include <memory>
 #include <csignal>
+#include "generator.h"
+#include <stack>
 
 using std::cout, std::endl;
 

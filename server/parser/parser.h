@@ -1,3 +1,5 @@
-#include "../scanner/analyzer.h"
+#pragma once
 
-ssize_t parse(token* token_arr, int token_arr_len);
+#include "../scanner/scanner.h"
+
+ssize_t parse(Tokens* token_arr);

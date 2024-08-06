@@ -6,10 +6,10 @@
  *
  *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
  */
-#include "../scanner/analyzer.h"
+#include "../scanner/scanner.h"
 #include <sys/types.h>
 
-ssize_t parse(token* tokens, int token_arr_len)
+ssize_t parse(Tokens* tokens)
 {
     return 0;
 }
