@@ -97,13 +97,13 @@ int load_configuration(configuration_t *config)
     while((ch = fgetc(fp)) != EOF) {
         if(ch == '\n') {
             if(parsing_comment_line == 1) {
-                printf("Stop parsing the comment line.\n");
+                //printf("Stop parsing the comment line.\n");
                 parsing_comment_line = 0;
             } else {
-                printf("The value of the parameter is : %s\n", value_buffer);
+                //printf("The value of the parameter is : %s\n", value_buffer);
                 result = set_configuration_parameter(name_buffer, value_buffer, config);
                 if(result == 1) {
-                    printf("Wrong configuration file formatting.\n");
+                    //printf("Wrong configuration file formatting.\n");
                 }
 
             }
@@ -113,12 +113,12 @@ int load_configuration(configuration_t *config)
             index_name_buffer = 0;
             index_value_buffer = 0;
         } else if(ch == '=') {
-            printf("Parameter with name : %s detected\n", name_buffer);
+            //printf("Parameter with name : %s detected\n", name_buffer);
             populate_parameter_name = 0;
         } else if (ch == '#') {
             /* If the line starts with a #, it's a comment line */
             if(index_name_buffer == 0) {
-                printf("Parsing a comment line.\n");
+                //printf("Parsing a comment line.\n");
                 parsing_comment_line = 1;
             }
         } else {

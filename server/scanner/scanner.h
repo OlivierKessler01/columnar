@@ -2,6 +2,11 @@
 
 #include "generator.h"
 
+struct token {
+    char* lexeme;
+    synthax_cat category;
+};
+
 /**
  * RAII'd struct
  */
@@ -11,7 +16,7 @@ struct Tokens {
 
     Tokens() 
     {
-        tokens = (token*)malloc(0);
+        tokens = (token*)malloc(sizeof(token)*1);
         token_len = 0;
     }
 

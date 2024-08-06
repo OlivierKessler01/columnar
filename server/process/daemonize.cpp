@@ -23,7 +23,7 @@
 /**
  * child_reap_handler() - Reaps the child zombies 
  */
-static void child_reap_handler(int sig)
+static void child_reap_handler(__attribute__((unused)) int sig)
 {
     int child_pid;
     //Potentialy multiple zombies are queued, make sure to reap them all
@@ -37,17 +37,16 @@ static int process_request(int max_req_len, int accepted_fd){
     int new_size;
     char req_buf[REQ_BUF_LEN] = {0};
     char* dyn_log_buffer;
-    char log_buffer[50];
 
     //Initialize the string that will contain the request
     int req_acc_len = 0;
-    char * req_acc = (char*)malloc(sizeof(char)*0);
+    char * req_acc = (char*)malloc(sizeof(char)*1);
     if(req_acc == NULL){
         syslog(LOG_ERR, "Error malloc'ing for request buffer");
         exit(EXIT_FAILURE);
     }
     int len_response = 0;
-    char* response = (char*) malloc(0);
+    char* response = (char*) malloc(sizeof(char)*1);
 
     //Read the incoming request
     //

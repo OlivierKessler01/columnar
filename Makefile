@@ -13,16 +13,16 @@ help: # Print help on Makefile
 
   
 build_server: clean # Build the server 
-	$(CC) $(CFLAGS) -g -o columnard server/main.cpp \
+	@$(CC) $(CFLAGS) -g -o columnard server/main.cpp \
 		server/filesystem/configuration.cpp \
-		server/scanner/analyzer.cpp \
-		server/parser/parser.cpp \
 		server/query/runner.cpp \
+		server/scanner/scanner.cpp \
+		server/parser/parser.cpp \
 		server/process/daemonize.cpp \
 		-W -Wall -pedantic
 
 build_client: clean #Build the client
-	$(CC) $(CFLAGS) -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
+	@$(CC) $(CFLAGS) -g -o columnarc client/main.cpp client/socket.cpp -W -Wall -pedantic
 
 .ONESHELL:
 .PHONY:
@@ -43,14 +43,12 @@ tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
 generate_scanner: clean # Generate the scanner code
 	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
-		server/scanner/analyzer.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_ex
 
 test_scanner_generator: clean
 	$(CC) $(CFLAGS) -g -DTEST -o scanner_generator_test  \
 		server/scanner/generator.cpp \
-		server/scanner/analyzer.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_generator_test
 
@@ -71,7 +69,7 @@ test_heap_sort: clean
 	&& ./heap_sort_test
 
 clean: # Remove all generated binaries
-	rm -rf columnarc columnard *_test
+	@rm -rf columnarc columnard *_test
 
 log-server: # Read the daemon syslogs
 	journalctl -n 100 -f | grep columnar

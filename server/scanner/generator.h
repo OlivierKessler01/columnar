@@ -48,9 +48,5 @@ enum synthax_cat {
     comment = 4,
 };
 
-typedef struct token {
-    char* lexeme;
-    synthax_cat category;
-} token;
 
 

@@ -21,11 +21,11 @@ using std::cout, std::endl;
 /**
  * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
  */
-static void child_reap_handler(int sig)
+static void child_reap_handler(__attribute__((unused)) int sig)
 {
     int child_pid;
     //Potentialy multiple zombies are queued, make sure to reap them all
-    while((child_pid = waitpid(-1, NULL, 0)) != -1) {
+    while((child_pid = waitpid(-1, NULL, 0)) > -1) {
     }
 }
 
@@ -76,14 +76,15 @@ int main(int argc, char** argv)
             exit(EXIT_SUCCESS);
 
         pipe(pipefd);
-        if (fork() == 0){
+        pid_t pid;
+        if ((pid = fork()) == 0){
             //In the child process
             char *response = (char*)malloc(sizeof(char)*1);
             //close the read end of the pipe
             close(pipefd[0]);
             //send the result of the server request to the parent process
             int client_sock = sock_connect(host, port);
-            if (int res = (send_request(req, strlen(req), client_sock, response)) < 0){
+            if (send_request(req, strlen(req), client_sock, response) < 0){
                 perror("Request failed.");
                 exit(EXIT_FAILURE);
             }
@@ -94,14 +95,37 @@ int main(int argc, char** argv)
             exit(EXIT_SUCCESS);
         } else {
             //In the parent process
+            //
+            // close the write end of the pipe
+            close(pipefd[1]);
+
+            //The parent makes sure to reap its child process before
+            //reading the pipe.
+            while((child_pid = waitpid(pid, NULL, 0)) <= 0) {
+                if (child_pid == -1) {
+                    if (errno == ECHILD) {
+                        printf(
+                            "No child process /w PID %d exists. Probably reaped by another process.\n", 
+                            pid
+                        );
+                        break; 
+                    } else {
+                        printf("Error reaping children.\n");
+                        exit(EXIT_FAILURE);
+                    }
+                } else {
+                 //0 means child process is not ready yet
+                }
+            }
+            printf("Child with PID %d terminated\n", child_pid);
+
             buf_response = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
             i = 0;
             if(buf_response == NULL){
                 perror("Malloc failed");
                 exit(EXIT_FAILURE);
             }
-            // close the write end of the pipe
-            close(pipefd[1]);
+
             while (read(pipefd[0], &b, 1) > 0){ // read while EOF
                 if(i > DEFAULT_RESP_SIZE -2){
                     buf_response = (char*)realloc(buf_response, i+2);
@@ -118,10 +142,6 @@ int main(int argc, char** argv)
             buf_response[i] = '\n';
             cout << buf_response << endl;
 
-            //The parent make sure to reap the child process 
-            while((child_pid = waitpid(-1, NULL, 0)) != -1) {
-                printf("Child with PID %d terminated\n", child_pid);
-            }
 
             free(buf_response);
         }
