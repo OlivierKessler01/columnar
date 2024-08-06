@@ -3,12 +3,13 @@
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
+#include <vector>
 #include <sys/syslog.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "daemonize.h"
+#include "daemon.h"
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -17,6 +18,13 @@
 #include <string.h>
 #include "../filesystem/configuration.h"
 #include "../query/runner.h"
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <unordered_map> 
+#include <sys/select.h>
+#include "daemon.h"
 
 #define REQ_BUF_LEN 500
 
@@ -30,6 +38,12 @@ static void child_reap_handler(__attribute__((unused)) int sig)
     while((child_pid = waitpid(-1, NULL, 0)) != -1) {
         syslog(LOG_ERR, "Child with PID %d terminated.", child_pid);
     }
+}
+
+static void add_client_async(int connfd, pool *p) {
+}
+
+static void process_async_request(pool *p) {
 }
 
 static int process_request(int max_req_len, int accepted_fd){
@@ -107,10 +121,11 @@ static int run(configuration* config) {
     int accepted_fd;
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
-
-
     /* Create the link to the syslog file */
     std::ofstream outputFile(config->log_file_path, std::ios::app);
+    int bind_res;
+    static pool pool;
+
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
         syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
@@ -133,7 +148,7 @@ static int run(configuration* config) {
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(config->tcp_port); // Port number
-    int bind_res = bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+    bind_res = bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
     if (bind_res < 0) {
         syslog(LOG_ERR, "Error binding socket");
@@ -149,10 +164,35 @@ static int run(configuration* config) {
     syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", config->tcp_port, listen_fd);
     
     if (strcmp(config->run_mode, MODE_ASYNC) == 0) {
-        //TODO: implement selection logic
-        //
+        //////////// ASYNC MODE ///////////////////
+        //init pool
+        int i;
+        pool.maxi = -1;
+        for(i=0; i<FD_SETSIZE; i++)
+            pool.clientfd[i] = -1;
+        pool.maxfd = listen_fd;
+        FD_ZERO(&pool.read_set);
+        FD_SET(listen_fd, &pool.read_set);
+
+        //Process
+        while (1) {
+            pool.nready = select(pool.maxfd+1, &pool.ready_set, NULL,NULL,NULL);
+
+            if (FD_ISSET(listen_fd, &pool.ready_set)) {
+                // Accept incoming connections
+                accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
+                if (accepted_fd < 0) {
+                    syslog(LOG_ERR, "Error accept()ing incoming connection: %s", strerror(errno));
+                    exit(EXIT_FAILURE);
+                }
+                add_client_async(accepted_fd, &pool);
+            }
+            
+            process_async_request(&pool);
+        }
     } else if (strcmp(config->run_mode, MODE_PROCESS) == 0) {
         while (1) {
+            //////////// PROCESS MODE ///////////////////
             // Accept incoming connections
             accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
 

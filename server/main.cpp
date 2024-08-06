@@ -1,5 +1,5 @@
 #include "filesystem/configuration.h"
-#include "process/daemonize.h"
+#include "process/daemon.h"
 #include <syslog.h>
 #include <unistd.h>
 

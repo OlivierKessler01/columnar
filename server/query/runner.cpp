@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/syslog.h>
 
+
 /**
  * function run_query - Call the lexer/scanner, then call the parser,
  * then call the query plan builder, then execute the plan.

@@ -18,7 +18,7 @@ build_server: clean # Build the server
 		server/query/runner.cpp \
 		server/scanner/scanner.cpp \
 		server/parser/parser.cpp \
-		server/process/daemonize.cpp \
+		server/process/daemon.cpp \
 		-W -Wall -pedantic
 
 build_client: clean #Build the client
