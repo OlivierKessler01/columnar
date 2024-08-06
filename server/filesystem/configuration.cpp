@@ -52,6 +52,15 @@ int set_configuration_parameter(
         }
 
         config->tcp_port = atoi(value_buffer);
+    } else if (strcmp(name_buffer, "run_mode") == 0) {
+        if (strcmp(value_buffer, MODE_ASYNC) == 0) {
+            strcpy(config->run_mode, MODE_ASYNC);
+        } else if (strcmp(value_buffer, MODE_PROCESS) == 0) {
+            strcpy(config->run_mode, MODE_PROCESS);
+        } else {
+            perror("Wrong run_mode configuration value, values allowed : async|process");     
+            exit(EXIT_FAILURE);
+        }
     }
 
     return 0;

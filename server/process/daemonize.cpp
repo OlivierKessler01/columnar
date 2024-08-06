@@ -101,15 +101,16 @@ static int process_request(int max_req_len, int accepted_fd){
  * run() - Listens on a socket for incoming connections, once
  * one comes, spawns a child process to treat the request.
  */
-static int run(int port, int max_req_len, char* log_file_path) {
+static int run(configuration* config) {
     int listen_fd;
     __pid_t child_pid;
     int accepted_fd;
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
 
+
     /* Create the link to the syslog file */
-    std::ofstream outputFile(log_file_path, std::ios::app);
+    std::ofstream outputFile(config->log_file_path, std::ios::app);
     // Check if the file is opened successfully
     if (!outputFile.is_open()) {
         syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
@@ -131,13 +132,10 @@ static int run(int port, int max_req_len, char* log_file_path) {
     // Bind the socket to a port
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(port); // Port number
-                                        
-    if (bind(
-        listen_fd, 
-        (struct sockaddr *)&server_addr,
-        sizeof(server_addr)
-    ) < 0) {
+    server_addr.sin_port = htons(config->tcp_port); // Port number
+    int bind_res = bind(listen_fd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+
+    if (bind_res < 0) {
         syslog(LOG_ERR, "Error binding socket");
         exit(EXIT_FAILURE);
     }
@@ -148,33 +146,38 @@ static int run(int port, int max_req_len, char* log_file_path) {
         exit(EXIT_FAILURE);
     }
 
-    syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", port, listen_fd);
+    syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", config->tcp_port, listen_fd);
     
-    while (1) {
-        // Accept incoming connections
-        accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
+    if (strcmp(config->run_mode, MODE_ASYNC) == 0) {
+        //TODO: implement selection logic
+        //
+    } else if (strcmp(config->run_mode, MODE_PROCESS) == 0) {
+        while (1) {
+            // Accept incoming connections
+            accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
 
-        if (accepted_fd < 0) {
-            syslog(LOG_ERR, "Error accept()ing incoming connection: %s", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
+            if (accepted_fd < 0) {
+                syslog(LOG_ERR, "Error accept()ing incoming connection: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
 
-        //A connection has been accepted, run the query in a child process
-        if ((child_pid = fork()) < 0) {
-            syslog(LOG_ERR, "Fork() error: %s", strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-        else if(child_pid == 0)
-        {
-            //In child process 
-            // First, close the listening fd
-            close(listen_fd);
-            process_request(max_req_len, accepted_fd);
-            exit(EXIT_SUCCESS);
-        }
-        else {
-            //In parent process
-            close(accepted_fd);
+            //A connection has been accepted, run the query in a child process
+            if ((child_pid = fork()) < 0) {
+                syslog(LOG_ERR, "Fork() error: %s", strerror(errno));
+                exit(EXIT_FAILURE);
+            }
+            else if(child_pid == 0)
+            {
+                //In child process 
+                // First, close the listening fd
+                close(listen_fd);
+                process_request(config->max_req_len, accepted_fd);
+                exit(EXIT_SUCCESS);
+            }
+            else {
+                //In parent process
+                close(accepted_fd);
+            }
         }
     }
 
@@ -248,8 +251,9 @@ void build_daemon(configuration_t config)
     for (x = sysconf(_SC_OPEN_MAX); x>=0; x--) {
         close (x);
     }
-
-    run(config.tcp_port, config.max_req_len, config.log_file_path);
+        
+    /* Run the daemon */
+    run(&config);
 }
 
 
