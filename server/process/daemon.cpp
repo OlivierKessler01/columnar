@@ -113,7 +113,7 @@ static int process_request(configuration_t* config, int accepted_fd){
     
     dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
     sprintf(dyn_log_buffer, "Received request: %s", req_acc);
-    syslog(LOG_INFO,"Received request: %s", dyn_log_buffer);
+    syslog(LOG_INFO,"Received request: %s", req_acc);
     //outputFile << dyn_log_buffer << std::endl;
    
     //Run the query (lexe+parser+build query plan+ run query plan)
@@ -164,21 +164,16 @@ static int run(configuration* config) {
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
     /* Create the link to the syslog file */
-    std::ofstream outputFile(config->log_file_path, std::ios::app);
+    //std::ofstream outputFile(config->log_file_path, std::ios::app);
     int bind_res;
     static pool pool;
 
     // Check if the file is opened successfully
-    if (!outputFile.is_open()) {
-        syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
-        exit(EXIT_FAILURE);
-    }
+    //if (!outputFile.is_open()) {
+     //   syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
+   //     exit(EXIT_FAILURE);
+    //}
    
-    //Reap the zombies children if the parent receives a SIGINT
-    if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
-        syslog(LOG_ERR, "Can't add SIGINT signal handler: %s", strerror(errno));
-        exit(EXIT_FAILURE);
-    }
 
     // Create a socket
     if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -215,12 +210,23 @@ static int run(configuration* config) {
         pool.maxfd = listen_fd;
         FD_ZERO(&pool.read_set);
         FD_SET(listen_fd, &pool.read_set);
+        
+        syslog(LOG_INFO, "pool.maxfd %d", pool.maxfd);
+        for (int i = 0; i <= pool.maxfd; ++i) {
+            if (FD_ISSET(i, &pool.read_set)) {
+                syslog(LOG_INFO, "File descriptor %d is set in the pool for reading.\n", i);
+            }
+        }
 
         //Process
         while (1) {
+            pool.ready_set = pool.read_set;
+            syslog(LOG_INFO, "select before");
             pool.nready = select(pool.maxfd+1, &pool.ready_set, NULL,NULL,NULL);
+            syslog(LOG_INFO, "select after %d", pool.maxfd);
 
             if (FD_ISSET(listen_fd, &pool.ready_set)) {
+                syslog(LOG_INFO, "accept");
                 // Accept incoming connections
                 accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
                 if (accepted_fd < 0) {
@@ -233,6 +239,12 @@ static int run(configuration* config) {
             process_async_request(&pool, config);
         }
     } else if (strcmp(config->run_mode, MODE_PROCESS) == 0) {
+        //Reap the zombies children if the parent receives a SIGINT
+        if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
+            syslog(LOG_ERR, "Can't add SIGINT signal handler: %s", strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+
         while (1) {
             //////////// PROCESS MODE ///////////////////
             // Accept incoming connections

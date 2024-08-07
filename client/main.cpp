@@ -18,9 +18,6 @@
 
 using std::cout, std::endl; 
 
-/**
- * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
- */
 static void sigint_handler(__attribute__((unused)) int sig)
 {
     //TODO: free resource
