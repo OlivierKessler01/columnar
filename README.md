@@ -8,8 +8,7 @@ If offers **two different execution modes** server side :
 * Subprocessing : Spawns a new process to handle each request
 * Async IO : Uses a single process and a single thread to handle concurrent requests, but will treat disk IO asynchronously.
 
-Client side, request spawns a new process, which initiates a new TCP 
-connection to the server, response is piped to main process.
+Client side, each request initiates a new TCP connection to the server.
 
 ## Compatibility
 Columnar is only compatible with Linux over x86 patforms at the moment.
