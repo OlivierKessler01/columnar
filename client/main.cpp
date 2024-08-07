@@ -32,10 +32,8 @@ static void child_reap_handler(__attribute__((unused)) int sig)
 int main(int argc, char** argv)
 {
     char req[MAX_REQ_LEN];
-    int pipefd[2];
     char host[MAX_HOST_LEN+1] = {0};
     int port;
-    char *buf_response;
     int i, child_pid;
     char b;
     
@@ -68,84 +66,30 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
+    char *response = (char*)malloc(sizeof(char)*1);
     while (1) {
         cout << "> ";
         fgets(req, sizeof(req), stdin);
 
-        if (strcmp(req,"exit\n") == 0)
-            exit(EXIT_SUCCESS);
-
-        pipe(pipefd);
-        pid_t pid;
-        if ((pid = fork()) == 0){
-            //In the child process
-            char *response = (char*)malloc(sizeof(char)*1);
-            //close the read end of the pipe
-            close(pipefd[0]);
-            //send the result of the server request to the parent process
-            int client_sock = sock_connect(host, port);
-            if (send_request(req, strlen(req), client_sock, response) < 0){
-                perror("Request failed.");
-                exit(EXIT_FAILURE);
-            }
-            write(pipefd[1], response, strlen(response));
+        if (strcmp(req,"exit\n") == 0) {
             free(response);
-            // closing the connected socket
-            close(client_sock);
             exit(EXIT_SUCCESS);
-        } else {
-            //In the parent process
-            //
-            // close the write end of the pipe
-            close(pipefd[1]);
-
-            //The parent makes sure to reap its child process before
-            //reading the pipe.
-            while((child_pid = waitpid(pid, NULL, 0)) <= 0) {
-                if (child_pid == -1) {
-                    if (errno == ECHILD) {
-                        printf(
-                            "No child process /w PID %d exists. Probably reaped by another process.\n", 
-                            pid
-                        );
-                        break; 
-                    } else {
-                        printf("Error reaping children.\n");
-                        exit(EXIT_FAILURE);
-                    }
-                } else {
-                 //0 means child process is not ready yet
-                }
-            }
-            printf("Child with PID %d terminated\n", child_pid);
-
-            buf_response = (char *)malloc(sizeof(char)*DEFAULT_RESP_SIZE);
-            i = 0;
-            if(buf_response == NULL){
-                perror("Malloc failed");
-                exit(EXIT_FAILURE);
-            }
-
-            while (read(pipefd[0], &b, 1) > 0){ // read while EOF
-                if(i > DEFAULT_RESP_SIZE -2){
-                    buf_response = (char*)realloc(buf_response, i+2);
-                    if(buf_response == NULL){
-                        perror("Realloc failed");
-                        free(buf_response);
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                buf_response[i] = b;
-                i++; 
-            }
-
-            buf_response[i] = '\n';
-            cout << buf_response << endl;
-
-
-            free(buf_response);
         }
+
+        //In the child process
+        //send the result of the server request to the parent process
+        int client_sock = sock_connect(host, port);
+        if (send_request(req, strlen(req), client_sock, response) < 0){
+            perror("Request failed.");
+            exit(EXIT_FAILURE);
+        }
+        cout << response << endl;
+        // closing the connected socket
+        close(client_sock);
     }
+
+    free(response);
+    exit(EXIT_SUCCESS);
     
     return 0;
 }
