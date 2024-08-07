@@ -23,6 +23,23 @@ static void sigint_handler(__attribute__((unused)) int sig)
     //TODO: free resource
 }
 
+/**
+ * process - Connects to the server using TCP, sends the request, prints the response.
+ * Returns -1 on error
+ */
+int process(char* host, int port, char* req, int req_len, char* response)
+{
+    int client_sock = sock_connect(host, port);
+    if (send_request(req, req_len, client_sock, response) < 0){
+        cout << "Error while processing the request";
+        close(client_sock);
+        return -1;
+    }
+    cout << response << endl;
+    close(client_sock);
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
     char req[MAX_REQ_LEN];
@@ -31,8 +48,9 @@ int main(int argc, char** argv)
     int i, child_pid;
     char b;
     
-    if (argc != 3) {
+    if (argc < 3 || argc > 4) {
         cout << "The program calling structure should be `columnarc <HOST> <PORT>`." << endl;
+        cout << "or `columnarc <HOST> <PORT> <REQUEST>`." << endl;
         exit(-1);
     }
 
@@ -48,39 +66,30 @@ int main(int argc, char** argv)
 
     strcpy(host, argv[1]); 
     port = atoi(argv[2]);
-    
-    //Reap the children if the parent receives a SIGINT
+
     if (signal(SIGINT, sigint_handler) == SIG_ERR){
         perror("Can\'t catch SIGINT");
         exit(EXIT_FAILURE);
     }
 
     char *response = (char*)malloc(sizeof(char)*1);
-    while (1) {
-        cout << "> ";
-        fgets(req, sizeof(req), stdin);
+    if (argc == 3) {
+        while (1) {
+            cout << "> ";
+            fgets(req, sizeof(req), stdin);
 
-        if (strcmp(req,"exit\n") == 0) {
-            free(response);
-            exit(EXIT_SUCCESS);
-        }
+            if (strcmp(req,"exit\n") == 0) {
+                free(response);
+                exit(EXIT_SUCCESS);
+            }
 
-        //In the child process
-        //send the result of the server request to the parent process
-        int client_sock = sock_connect(host, port);
-        if (send_request(req, strlen(req), client_sock, response) < 0){
-            perror("Request failed.");
-            free(response);
-            close(client_sock);
-            exit(EXIT_FAILURE);
+            process(host, port, req, strlen(req), response);
         }
-        cout << response << endl;
-        // closing the connected socket
-        close(client_sock);
+    } else {
+        process(host, port, argv[3], strlen(argv[3]), response);
     }
 
     free(response);
     exit(EXIT_SUCCESS);
-    
     return 0;
 }
