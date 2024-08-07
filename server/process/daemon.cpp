@@ -210,23 +210,13 @@ static int run(configuration* config) {
         pool.maxfd = listen_fd;
         FD_ZERO(&pool.read_set);
         FD_SET(listen_fd, &pool.read_set);
-        
-        syslog(LOG_INFO, "pool.maxfd %d", pool.maxfd);
-        for (int i = 0; i <= pool.maxfd; ++i) {
-            if (FD_ISSET(i, &pool.read_set)) {
-                syslog(LOG_INFO, "File descriptor %d is set in the pool for reading.\n", i);
-            }
-        }
 
         //Process
         while (1) {
             pool.ready_set = pool.read_set;
-            syslog(LOG_INFO, "select before");
             pool.nready = select(pool.maxfd+1, &pool.ready_set, NULL,NULL,NULL);
-            syslog(LOG_INFO, "select after %d", pool.maxfd);
 
             if (FD_ISSET(listen_fd, &pool.ready_set)) {
-                syslog(LOG_INFO, "accept");
                 // Accept incoming connections
                 accepted_fd = accept(listen_fd, (struct sockaddr *)&server_addr, &server_addr_len);
                 if (accepted_fd < 0) {
