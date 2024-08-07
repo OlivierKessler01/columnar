@@ -87,15 +87,18 @@ log-server: # Read the daemon syslogs
 
 .PHONY:
 trace: build_server build_client
-	@echo -e "$(RED)Enable kernel tracing $(RESET)"
-	@source ~/.bash_profile && start_kernel_tracing
+	@echo -e "$(RED)Kill old servers and clients$(RESET)"
 	@killall columnard 2>/dev/null
+	@killall columnarc 2>/dev/null
 	@echo -e "$(RED)Sleep 5 secs $(RESET)"
 	@sleep 5
-	@killall columnarc 2>/dev/null
+	@echo -e "$(RED)Enable kernel tracing $(RESET)"
+	@source ~/.bash_profile && start_kernel_tracing
 	./columnard
 	@echo -e "$(RED)Sending two requests in parallel $(RESET)"
-	parallel ::: "./columnarc 127.0.0.1 3307 test" "./columnarc 127.0.0.1 3307 test"
+	@for i in {1..2}; do \
+		./columnarc 127.0.0.1 3307 test & \
+	done
 	@echo -e "$(RED)Disable kernel tracing $(RESET)"
 	@source ~/.bash_profile && stop_kernel_tracing
 	
