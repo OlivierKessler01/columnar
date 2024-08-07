@@ -4,13 +4,13 @@ Columnar is a database managment system written in C++ with a strong C flavor.
 
 Columnar offers an ANSI SQL compliant API.
 
-If offers **two different execution modes** server side : 
-* Subprocessing : Spawns a new process to handle each request
-* Async IO : Uses a single process and a single thread to handle concurrent requests, but will treat disk IO asynchronously.
+The server has **two different execution modes** you can choose from : 
+* Subprocessing : Spawns a new process to handle each request. Offers high isolation between requests, compute parallelism over your multiple cores, at the cost of kernel overhead and limit in terms of number of concurrent requests. Suited for CPU-bound tasks (ex: some complex aggregation/window functions).
+* Async IO : Uses a single process and a single thread to handle concurrent requests, but will treat disk IO asynchronously. All requests share heap, all requests share stack, and parallelism over multiple cores is not possible. Suited for IO-bound requests (ex: index lookups).
 
 Client side, each request initiates a new TCP connection to the server.
 
-## Compatibility
+## Compatiblity
 Columnar is only compatible with Linux over x86 patforms at the moment.
 
 ## Architecture documentation
