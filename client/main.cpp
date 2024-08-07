@@ -21,12 +21,9 @@ using std::cout, std::endl;
 /**
  * function child_reap_handler - Reap the child process if the parent receives a SIGINT 
  */
-static void child_reap_handler(__attribute__((unused)) int sig)
+static void sigint_handler(__attribute__((unused)) int sig)
 {
-    int child_pid;
-    //Potentialy multiple zombies are queued, make sure to reap them all
-    while((child_pid = waitpid(-1, NULL, 0)) > -1) {
-    }
+    //TODO: free resource
 }
 
 int main(int argc, char** argv)
@@ -56,13 +53,8 @@ int main(int argc, char** argv)
     port = atoi(argv[2]);
     
     //Reap the children if the parent receives a SIGINT
-    if (signal(SIGINT, child_reap_handler) == SIG_ERR){
+    if (signal(SIGINT, sigint_handler) == SIG_ERR){
         perror("Can\'t catch SIGINT");
-        exit(EXIT_FAILURE);
-    }
-    //Reap the children when the exit
-    if (signal(SIGCHLD, child_reap_handler) == SIG_ERR){
-        perror("Can\'t catch SIGCHLD");
         exit(EXIT_FAILURE);
     }
 
@@ -81,6 +73,8 @@ int main(int argc, char** argv)
         int client_sock = sock_connect(host, port);
         if (send_request(req, strlen(req), client_sock, response) < 0){
             perror("Request failed.");
+            free(response);
+            close(client_sock);
             exit(EXIT_FAILURE);
         }
         cout << response << endl;
