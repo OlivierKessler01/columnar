@@ -47,12 +47,20 @@ echo "run_mode=async" >> /etc/columnar/columnar.cnf
 make server 
 ```
 
-* Using the client
+* Using the client in interactive mode
 ```bash
 make client 
 ./columnarc 127.0.0.1 3307
 #Prompt displays
 > SELECT * FROM whatever table;
+test test test
+```
+
+* Using the client for one-shot requests
+
+```bash
+make client 
+./columnarc 127.0.0.1 3307 "SELECT * FROM whatever table;"
 test test test
 ```
 
