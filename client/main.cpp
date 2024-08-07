@@ -18,9 +18,13 @@
 
 using std::cout, std::endl; 
 
+char* response = NULL;
+
 static void sigint_handler(__attribute__((unused)) int sig)
 {
-    //TODO: free resource
+    if(response)
+        free(response);
+    exit(EXIT_FAILURE);
 }
 
 /**
@@ -64,6 +68,11 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
+    if (argc == 4 && strlen(argv[3]) > MAX_REQ_LEN){
+        printf("%s", "Request too long. \n");
+        exit(EXIT_FAILURE);
+    }
+
     strcpy(host, argv[1]); 
     port = atoi(argv[2]);
 
@@ -72,7 +81,8 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     }
 
-    char *response = (char*)malloc(sizeof(char)*1);
+    response = (char*)malloc(sizeof(char)*1);
+
     if (argc == 3) {
         while (1) {
             cout << "> ";
@@ -86,7 +96,9 @@ int main(int argc, char** argv)
             process(host, port, req, strlen(req), response);
         }
     } else {
-        process(host, port, argv[3], strlen(argv[3]), response);
+        strcpy(req, argv[3]);
+        strcat(req, "\n");
+        process(host, port, req, strlen(argv[3])+1, response);
     }
 
     free(response);

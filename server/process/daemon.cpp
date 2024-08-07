@@ -104,9 +104,11 @@ static int process_request(configuration_t* config, int accepted_fd){
         }
         req_acc_len=new_size;
         
-        //The whole request has been transmitted
-        //start the parsing process
+        //TODO : Add a timeout in case the client sends a partial request
+        //missin the \n
         if(req_acc[req_acc_len -1] == '\n'){
+            //The whole request has been transmitted
+            //start the parsing process
             break; 
         }
     }
