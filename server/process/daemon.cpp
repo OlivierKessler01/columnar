@@ -41,12 +41,30 @@ static void child_reap_handler(__attribute__((unused)) int sig)
 }
 
 static void add_client_async(int connfd, pool *p) {
+    int i;
+    p->nready--;
+    for(i = 0; i < FD_SETSIZE; i++) { //Find an available slot
+        if(p->clientfd[i] < 0) {
+            p->clientfd[i] = connfd;
+            FD_SET(connfd, &p->read_set);
+            
+            //Update max descriptor and pool highwater mark
+            if (connfd > p->maxfd)
+                p->maxfd = connfd;
+            if(i > p->maxi)
+                p->maxi = i;
+            break;
+        }
+    }
+    
+    //All slots in the pool are filled, too many clients connected
+    if(i == FD_SETSIZE) {
+        syslog(LOG_ERR, "Too many clients");
+        exit(EXIT_FAILURE);
+    }
 }
 
-static void process_async_request(pool *p) {
-}
-
-static int process_request(int max_req_len, int accepted_fd){
+static int process_request(configuration_t* config, int accepted_fd){
     int bytes_read;
     int new_size;
     char req_buf[REQ_BUF_LEN] = {0};
@@ -68,9 +86,9 @@ static int process_request(int max_req_len, int accepted_fd){
     //for the n chars of the request.
     while((bytes_read = read(accepted_fd, req_buf, REQ_BUF_LEN)) > 0){
         new_size = req_acc_len+bytes_read;
-        if(new_size > max_req_len){
+        if(new_size > config->max_req_len){
             char text[100];
-            sprintf(text, "Request too long, max length : %d", max_req_len);
+            sprintf(text, "Request too long, max length : %d", config->max_req_len);
             write(accepted_fd, text, strlen(text));
         }
 
@@ -109,6 +127,30 @@ static int process_request(int max_req_len, int accepted_fd){
     free(response);
     close(accepted_fd);
     return 1;
+}
+
+/**
+ *
+ * process_acync_request - For each ready descriptors in the request descriptor
+ * pool, send the response.
+ *
+ */
+static void process_async_request(pool *p, configuration_t* config) {
+    int i, connfd;
+    
+    for (i=0; (i<=p->maxi) && (p->nready > 0); i++) {
+        connfd = p->clientfd[i];
+
+        //If the descriptor is ready, return a response to the request
+        if ((connfd > 0) && (FD_ISSET(connfd, &p->ready_set))) {
+            p->nready--;
+            process_request(config, connfd);
+            close(connfd);
+            //Remove the descriptor from the read_set, the request has been served
+            FD_CLR(connfd, &p->read_set);
+            p->clientfd[i] = -1;
+        }
+    }
 }
 
 /**
@@ -188,7 +230,7 @@ static int run(configuration* config) {
                 add_client_async(accepted_fd, &pool);
             }
             
-            process_async_request(&pool);
+            process_async_request(&pool, config);
         }
     } else if (strcmp(config->run_mode, MODE_PROCESS) == 0) {
         while (1) {
@@ -211,7 +253,8 @@ static int run(configuration* config) {
                 //In child process 
                 // First, close the listening fd
                 close(listen_fd);
-                process_request(config->max_req_len, accepted_fd);
+                process_request(config, accepted_fd);
+                close(accepted_fd);
                 exit(EXIT_SUCCESS);
             }
             else {

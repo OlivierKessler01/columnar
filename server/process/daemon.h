@@ -13,11 +13,11 @@
 
 void build_daemon(configuration_t config);
 
-struct pool {
-    int maxfd;
+struct pool { //Represents a pool of connected descriptor
+    int maxfd; //Largest descriptor in read_set
     fd_set read_set; //Set of all active (accepted) descriptors
     fd_set ready_set; //Subset of read_set ready for reading (the request)
-    int nready;
+    int nready; //Number of ready descriptors from select
     int maxi; //Highwater index
-    int clientfd[FD_SETSIZE];
+    int clientfd[FD_SETSIZE]; //Set of active descriptors
 };
