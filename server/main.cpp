@@ -12,7 +12,7 @@ int main()
         DEFAULT_RUN_MODE
     };
     load_configuration(&config);
-    syslog(LOG_INFO, "Server run mode : %s", config.run_mode);
+    //syslog(LOG_INFO, "Server run mode : %s", config.run_mode);
     build_daemon(config);
     return 0;
 }

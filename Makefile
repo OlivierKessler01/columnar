@@ -86,7 +86,11 @@ log-server: # Read the daemon syslogs
 
 
 .PHONY:
-trace: build_server build_client
+trace: build_server build_client # Usage : `make trace clients=<NUMBER_CLIENTS>`
+ifeq ($(clients),)
+	@echo "Error: No `clients` argument provided. Usage is 'make trace clients=<NUMBER_CLIENTS>'."
+	exit 1
+else
 	@echo -e "$(RED)Kill old servers and clients$(RESET)"
 	@killall columnard 2>/dev/null
 	@killall columnarc 2>/dev/null
@@ -96,9 +100,10 @@ trace: build_server build_client
 	@source ~/.bash_profile && start_kernel_tracing
 	./columnard
 	@echo -e "$(RED)Sending two requests in parallel $(RESET)"
-	@for i in {1..2}; do \
+	@for i in {1..$(clients)}; do \
 		./columnarc 127.0.0.1 3307 test & \
 	done
 	@echo -e "$(RED)Disable kernel tracing $(RESET)"
 	@source ~/.bash_profile && stop_kernel_tracing
+endif
 	

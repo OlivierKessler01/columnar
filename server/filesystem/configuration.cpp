@@ -94,7 +94,7 @@ int load_configuration(configuration_t *config)
     clear_buffer(value_buffer, PARAMETER_VALUE_BUFFER_SIZE);
     clear_buffer(config->log_file_path, PARAMETER_VALUE_BUFFER_SIZE);
 
-    syslog(LOG_INFO, "Reading the configuration file.");
+    //syslog(LOG_INFO, "Reading the configuration file.");
     fp = fopen(file_name, "r");
 
     if (fp == NULL)

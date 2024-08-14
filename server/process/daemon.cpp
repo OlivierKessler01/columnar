@@ -115,7 +115,7 @@ static int process_request(configuration_t* config, int accepted_fd){
     
     dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
     sprintf(dyn_log_buffer, "Received request: %s", req_acc);
-    syslog(LOG_INFO,"Received request: %s", req_acc);
+    //syslog(LOG_INFO,"Received request: %s", req_acc);
     //outputFile << dyn_log_buffer << std::endl;
    
     //Run the query (lexe+parser+build query plan+ run query plan)
@@ -200,11 +200,12 @@ static int run(configuration* config) {
         exit(EXIT_FAILURE);
     }
 
-    syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", config->tcp_port, listen_fd);
+    //syslog(LOG_INFO, "Server listening on port %d , listen_fd : %d", config->tcp_port, listen_fd);
     
     if (strcmp(config->run_mode, MODE_ASYNC) == 0) {
         //////////// ASYNC MODE ///////////////////
         //init pool
+        syslog(LOG_INFO, "Async mode");
         int i;
         pool.maxi = -1;
         for(i=0; i<FD_SETSIZE; i++)
@@ -300,7 +301,7 @@ void build_daemon(configuration_t config)
         exit(EXIT_FAILURE);
     }
 
-    syslog(LOG_INFO, "Columnar server daemon running.");
+    //syslog(LOG_INFO, "Columnar server daemon running.");
 
     /* On success: The child process becomes session leader */
     if (setsid() < 0)

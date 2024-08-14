@@ -14,7 +14,7 @@
  */
 ssize_t run_query(char *response, char* query, ssize_t query_len)
 {
-    syslog(LOG_INFO, "in run_query() function");
+    //syslog(LOG_INFO, "in run_query() function");
     Tokens tokens;
     ssize_t len_tokens, result_parser;
     
