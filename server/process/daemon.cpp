@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <stdlib.h>
 #include <stdio.h>
-#include <vector>
 #include <sys/syslog.h>
 #include <unistd.h>
 #include <signal.h>
@@ -22,7 +20,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <unordered_map> 
 #include <sys/select.h>
 #include "daemon.h"
 

@@ -49,8 +49,6 @@ int main(int argc, char** argv)
     char req[MAX_REQ_LEN];
     char host[MAX_HOST_LEN+1] = {0};
     int port;
-    int i, child_pid;
-    char b;
     
     if (argc < 3 || argc > 4) {
         cout << "The program calling structure should be `columnarc <HOST> <PORT>`." << endl;
