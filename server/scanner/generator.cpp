@@ -560,6 +560,7 @@ int construct_scanner()
     cout << "Converting regexp to nfa" << endl;
     thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
+    //TODO : THIS IF FAILING DUE TO HASHING OF STATES SETS
     subset_construction(&nfa, dfa);
     cout << "Minimizing the dfa" << endl;
     //minimize_dfa(dfa);
