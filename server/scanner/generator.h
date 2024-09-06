@@ -34,7 +34,7 @@ struct state {
     };
 };
 
-struct deltas 
+struct deltas_t
 {
     // [start_state_id[char] -> stop_state_name]
     unordered_map<string, unordered_map<char, string>> transitions; 
@@ -47,14 +47,14 @@ struct nfa {
     string accept;
     unordered_set<char> sigma; // finite alphabet used by the nfa
     unordered_map<string, state> states; // [state_uid -> state...]
-    deltas deltas;
+    deltas_t deltas;
 };
 
 
 struct dfa {
     string start;
     vector<string> accept;
-    deltas deltas; // [state_uid -> deltas...]
+    deltas_t deltas; // [state_uid -> deltas...]
 };
 
 enum synthax_cat {

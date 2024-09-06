@@ -462,7 +462,6 @@ struct state_set_pred {
 /**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
- */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
     std::unordered_set<
@@ -515,7 +514,8 @@ static void subset_construction(nfa* nfa, dfa* dfa)
             }
         }
     }
-}
+} 
+*/
 
 
 /**
@@ -545,7 +545,7 @@ int construct_scanner()
     initialize_nfa(&nfa);
 
     dfa * dfa;
-    char* code = (char*)malloc(0);
+    char* code = (char*)malloc(1);
         
     std::cout << "Tree of operations: ";
     auto tokens = re_tokenize(GLOBAL_REGEXP);
@@ -605,10 +605,9 @@ int test_union_construct()
 
     union_construct(&a, &b, &result);
     
-    assert(result.states[result.start].epsilon_transitions.size() == 2);
-    assert(result.states[result.start].deltas.size() == 1);
-    assert(result.states[a.accept].epsilon_transitions.size() == 1);
-    assert(result.states[b.accept].epsilon_transitions.size() == 1);
+    assert(result.deltas.epsilon_transitions[result.start].size() == 2);
+    assert(result.deltas.epsilon_transitions[a.accept].size() == 1);
+    assert(result.deltas.epsilon_transitions[b.accept].size() == 1);
     //TODO: Test all deltas
     return EXIT_SUCCESS;
 }
@@ -620,8 +619,8 @@ int test_kleene_construct()
     initialize_nfa(&a);
     kleene_construct(&a);
 
-    assert(a.states[a.start].epsilon_transitions.size() == 2);
-    assert(a.states[a.start].deltas.size() == 0);
+    assert(a.deltas.epsilon_transitions[a.start].size() == 2);
+    assert(a.deltas.transitions[a.start].size() == 0);
     return EXIT_SUCCESS;
 }
 

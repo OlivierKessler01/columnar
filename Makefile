@@ -55,7 +55,7 @@ generate_scanner: clean # Generate the scanner code
 		-W -Wall -pedantic \
 	&& ./scanner_ex
 
-test_scanner_generator: clean
+test_scanner_generator: clean # Test the scanner generator
 	$(CC) $(CFLAGS) -g -DTEST -o scanner_generator_test  \
 		server/scanner/generator.cpp \
 		-W -Wall -pedantic \
