@@ -462,6 +462,7 @@ struct state_set_pred {
 /**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
+ */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
     std::unordered_set<
@@ -515,7 +516,6 @@ static void subset_construction(nfa* nfa, dfa* dfa)
         }
     }
 } 
-*/
 
 
 /**
@@ -560,7 +560,7 @@ int construct_scanner()
     cout << "Converting regexp to nfa" << endl;
     thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
-    //subset_construction(&nfa, dfa);
+    subset_construction(&nfa, dfa);
     cout << "Minimizing the dfa" << endl;
     //minimize_dfa(dfa);
     cout << "Generate scanner C++ code as a file." << endl;
