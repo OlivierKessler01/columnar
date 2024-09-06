@@ -7,6 +7,8 @@
  */
 
 #include <iostream>
+#include <unordered_set>
+
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
 #define INTEGER_REGEXP "(0|[1...9][0...9]*)"
 #define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
@@ -123,16 +125,8 @@ struct regex_node {
  */
 void initialize_nfa(nfa* nfa)
 {
-    state start = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
-    state accept = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
+    state start = state{ uuid::generate_uuid_v4() };
+    state accept = state{ uuid::generate_uuid_v4()};
     nfa->states[start.name] = start;
     nfa->states[accept.name] = accept;
     nfa->start = start.name;
@@ -143,16 +137,21 @@ void initialize_nfa(nfa* nfa)
  * e_closure - Takes a set of states, returns a set of states reacheable via only
  * epsilon transitions/closures.
  */
-void e_closure(std::set<state>* q, std::set<state>* result)
-{
+void e_closure(
+    std::unordered_set<state, state::hash_function>* q,
+    std::unordered_set<state, state::hash_function>* result
+) {
 }
 
 /**
  * delta - Applies the transition function to each element of 
  * q, given a char c.
  */
-void delta_func(std::set<state>* q, std::set<state>* result,  char c)
-{
+void delta_func(
+    std::unordered_set<state, state::hash_function>* q,
+    std::unordered_set<state, state::hash_function>* result,
+    char c
+) {
 }
 
 
@@ -172,12 +171,7 @@ static void nfa_append(nfa *src, nfa* dest)
  */
 static void add_delta_nfa(nfa* nfa, string from_id, string to_id, char character)
 {
-    delta d;
-    d.input = character;
-    d.to = to_id;
-
-    nfa->states[from_id].deltas[to_id].push_back(d);
-    nfa->sigma.insert(character);
+    nfa->deltas.transitions[from_id][character] = to_id;
 }
 
 /**
@@ -208,21 +202,10 @@ static void union_construct(nfa* a, nfa* b, nfa* result)
     nfa_append(a,result);
     nfa_append(b,result);
     
-    delta first = delta{};
-    first.to = a->start;
-    result->states[result->start].epsilon_deltas[a->start].push_back(first);
-
-    delta second = delta{};
-    second.to = b->start;
-    result->states[result->start].epsilon_deltas[b->start].push_back(second);
-
-    delta third = delta{};
-    third.to = result->accept;
-    result->states[a->accept].epsilon_deltas[result->accept].push_back(third);
-
-    delta fourth = delta{};
-    fourth.to = result->accept;
-    result->states[b->accept].epsilon_deltas[result->accept].push_back(fourth);
+    result->deltas.epsilon_transitions[result->start].push_back(a->start);
+    result->deltas.epsilon_transitions[result->start].push_back(b->start);
+    result->deltas.epsilon_transitions[a->accept].push_back(result->accept);
+    result->deltas.epsilon_transitions[b->accept].push_back(result->accept);
 }
 
 
@@ -254,10 +237,7 @@ static void concat_construct(nfa* a, nfa* b, nfa* result)
     result->accept = b->accept;
 
     //Add the epsilon transitions
-    delta first = delta{};
-    first.to = b->start;
-
-    result->states[a->accept].epsilon_deltas[b->start].push_back(first);
+    result->deltas.epsilon_transitions[a->accept].push_back(b->start);
 }
 
 /**
@@ -291,36 +271,19 @@ static void kleene_construct(nfa* a)
     old_start = a->start;
     old_accept = a->accept;
 
-    state new_start = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
-    state new_accept = state{
-        uuid::generate_uuid_v4(),
-        unordered_map<string, vector<delta>>(),
-        unordered_map<string, vector<delta>>(),
-    };
+    state new_start = state{uuid::generate_uuid_v4()};
+    state new_accept = state{uuid::generate_uuid_v4()};
 
     a->start = new_start.name;
     a->accept = new_accept.name;
+    a->states[new_start.name] = new_start;
+    a->states[new_accept.name] = new_accept;
 
-    delta empty = delta{};
-    empty.to = a->accept;
 
-    delta to_a = delta{};
-    to_a.to = old_start;
-
-    delta feedback = delta{};
-    feedback.to = old_start;
-
-    delta stop = delta{};
-    stop.to = a->accept;
-
-    a->states[new_start.name].epsilon_deltas[a->accept].push_back(empty);
-    a->states[new_start.name].epsilon_deltas[old_start].push_back(to_a);
-    a->states[old_accept].epsilon_deltas[old_start].push_back(feedback);
-    a->states[old_accept].epsilon_deltas[a->accept].push_back(stop);
+    a->deltas.epsilon_transitions[new_start.name].push_back(a->accept);
+    a->deltas.epsilon_transitions[new_start.name].push_back(old_start);
+    a->deltas.epsilon_transitions[old_accept].push_back(old_start);
+    a->deltas.epsilon_transitions[old_accept].push_back(a->accept);
 }
 
 /**
@@ -478,23 +441,21 @@ static std::shared_ptr<regex_node> build_thompson_tree(
     return nodeStack.top();
 }
 
-
-struct set_hash {
-    template <typename T>
-    std::size_t operator()(const T& set) const {
-        std::size_t seed = 0;
-        for (const auto& elem : set) {
-            seed ^= std::hash<decltype(elem)>{}(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+// Hash set of stated
+struct state_set_hash {
+    size_t operator()(const std::unordered_set<state> &s) const {
+        std::string result;
+        for (const auto &state: s){
+            result += state.name;
         }
-        return seed;
+        // Just hash the name field
+        return std::hash<string>()(result);
     }
 };
 
-// Equality function for std::set<state>
-struct set_equal {
-    template <typename T>
-    bool operator()(const T& lhs, const T& rhs) const {
-        return lhs == rhs;
+// Compare two set of states
+struct state_set_pred {
+    size_t operator()(const std::unordered_set<state> &s) const {
     }
 };
 
@@ -504,14 +465,22 @@ struct set_equal {
  */
 static void subset_construction(nfa* nfa, dfa* dfa)
 {
-    std::set<state> q0, q, n0_set, t, result;
-    std::set<std::set<state>> worklist, big_q;
+    std::unordered_set<
+        state,
+        state::hash_function
+    > q0, q, n0_set, t, result;
+
+    std::unordered_set<
+        std::unordered_set<state, state::hash_function>,
+        state_set_hash,
+        state_set_pred
+    > worklist,big_q;
 
     std::unordered_map<
-        std::set<state>,
-        std::unordered_map<char, std::set<state>>,
-        set_hash,
-        set_equal
+        std::unordered_set<state, state::hash_function>,
+        std::unordered_map<char, std::unordered_set<state, state::hash_function>>,
+        state_set_hash,
+        state_set_pred
     > big_t;
 
     n0_set.insert(nfa->states[nfa->start]);
@@ -537,6 +506,7 @@ static void subset_construction(nfa* nfa, dfa* dfa)
             t.clear();
             delta_func(&q, &result, character);
             e_closure(&result, &t); 
+             
             big_t[q][character] = t;
             
             if (big_q.count(t) == 0) {
@@ -547,6 +517,7 @@ static void subset_construction(nfa* nfa, dfa* dfa)
     }
 }
 
+
 /**
  * minimize_dfa - Remove duplicates states from the dfa using partitionning/segregation
  */
@@ -556,14 +527,14 @@ static void minimize_dfa(dfa* dfa)
 }
 
 /**
- * generate_scanner_code - Generate the scanner code as a file. 
+ * generate_scanner_code() - Generate the scanner code as a file. 
  */
 static void generate_scanner_code(dfa* dfa)
 {
 }
 
 /**
- * construct_scanner - Build the SQL scanner. Output is an executable and dynamically
+ * construct_scanner() - Build the SQL scanner. Output is an executable and dynamically
  * linkeable file.
  * Run this once offline when modifying the language synthax. Then the file
  * will be used to lexe/tokenize at runtime.
@@ -576,6 +547,7 @@ int construct_scanner()
     dfa * dfa;
     char* code = (char*)malloc(0);
         
+    std::cout << "Tree of operations: ";
     auto tokens = re_tokenize(GLOBAL_REGEXP);
     auto postfixTokens = re_to_postfix(tokens);
     std::cout << "Build thompson tree" << endl;
@@ -588,7 +560,7 @@ int construct_scanner()
     cout << "Converting regexp to nfa" << endl;
     thompson_construction(&nfa, tree);
     cout << "Converting nfa to dfa" << endl;
-    subset_construction(&nfa, dfa);
+    //subset_construction(&nfa, dfa);
     cout << "Minimizing the dfa" << endl;
     //minimize_dfa(dfa);
     cout << "Generate scanner C++ code as a file." << endl;
@@ -616,7 +588,7 @@ int test_concat_construct()
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
-    assert(result.states[a.accept].epsilon_deltas.size() == 1);
+    assert(result.deltas.epsilon_transitions[a.accept].size() == 1);
     
     return EXIT_SUCCESS;
 }
@@ -633,10 +605,10 @@ int test_union_construct()
 
     union_construct(&a, &b, &result);
     
-    assert(result.states[result.start].epsilon_deltas.size() == 2);
+    assert(result.states[result.start].epsilon_transitions.size() == 2);
     assert(result.states[result.start].deltas.size() == 1);
-    assert(result.states[a.accept].epsilon_deltas.size() == 1);
-    assert(result.states[b.accept].epsilon_deltas.size() == 1);
+    assert(result.states[a.accept].epsilon_transitions.size() == 1);
+    assert(result.states[b.accept].epsilon_transitions.size() == 1);
     //TODO: Test all deltas
     return EXIT_SUCCESS;
 }
@@ -648,7 +620,7 @@ int test_kleene_construct()
     initialize_nfa(&a);
     kleene_construct(&a);
 
-    assert(a.states[a.start].epsilon_deltas.size() == 2);
+    assert(a.states[a.start].epsilon_transitions.size() == 2);
     assert(a.states[a.start].deltas.size() == 0);
     return EXIT_SUCCESS;
 }
