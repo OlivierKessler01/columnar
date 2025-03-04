@@ -49,7 +49,13 @@ run-dev: server client # Build client and server, then run them
 
 tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
 
-generate_scanner: clean # Generate the scanner code
+debug_generate_scanner: clean # Debug the scanner generator code
+	$(CC) $(CFLAGS) -g  -o scanner_ex  \
+		server/scanner/generator.cpp \
+		-W -Wall -pedantic \
+	&& gdb ./scanner_ex
+
+generate_scanner: clean # Generate the scanner generator
 	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
 		-W -Wall -pedantic \
