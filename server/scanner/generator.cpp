@@ -7,12 +7,14 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <unordered_set>
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
 #define INTEGER_REGEXP "(0|[1...9][0...9]*)"
 #define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
-#define GLOBAL_REGEXP IDENTIFIER_REGEXP "|" INTEGER_REGEXP "|" KEYWORD_REGEXP
+#define OPERATOR_REGEXP "(\\*|\\+|\\-)"
+#define END_LINE_REGEXP "(;)"
 #include "generator.h"
 #include <csignal>
 #include <cstring>
@@ -20,6 +22,10 @@
 #include <random>
 #include <sstream>
 #include <stack>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdio.h>
 
 using std::cout, std::endl;
 
@@ -339,7 +345,7 @@ static std::vector<std::string> re_tokenize(const std::string &regex) {
       }
       if (c == '(' || c == ')' || c == '|' || c == '*' || c == '\xB7') {
         tokens.push_back(std::string(1, c));
-      } else if (isalnum(c)) {
+      } else if (isalnum(c) || c == ';') {
         token += c;
       }
     }
@@ -368,7 +374,7 @@ re_to_postfix(const std::vector<std::string> &tokens) {
   };
 
   for (const auto &token : tokens) {
-    if (isalnum(token[0]) || token == " " || token[0] == '[') {
+    if (isalnum(token[0]) || token == ";" || token == " " || token[0] == '[') {
       output.push_back(token);
     } else if (token == "(") {
       operators.push(token);
@@ -517,7 +523,28 @@ static void minimize_dfa(dfa *dfa) {
 /**
  * generate_scanner_code() - Generate the scanner code as a file.
  */
-static void generate_scanner_code(dfa *dfa) {}
+static void generate_scanner_code(dfa* int_dfa, dfa* key_dfa, dfa* op_dfa, dfa* endl_dfa) {
+    FILE *fp = fopen("server/scanner/scanner.cpp", "a");  // Open file in append mode
+    
+    if (fp != NULL) {
+        const char* content = 
+            "#include \"scanner.h\"\n\n"
+            "/**\n"
+            " * lexe - Given a request and a list of tokens allocated on the heap\n"
+            " *\n"
+            " */\n"
+            "size_t lexe(Tokens* tokens, char* str, ssize_t str_size) \n"
+            "{\n"
+            "    return 0;\n"
+            "}\n";
+
+        fprintf(fp, "%s", content);  // Write content to the file
+        fclose(fp);  // Correct way to close FILE*
+    } else {
+        printf("Unable to write to the scanner file. Abort\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 /**
  * construct_scanner() - Build the SQL scanner. Output is an executable and
@@ -525,30 +552,56 @@ static void generate_scanner_code(dfa *dfa) {}
  * synthax. Then the file will be used to lexe/tokenize at runtime.
  */
 int construct_scanner() {
-  nfa nfa;
-  initialize_nfa(&nfa);
+  nfa int_nfa, key_nfa, op_nfa, endl_nfa;
+  initialize_nfa(&int_nfa);
+  initialize_nfa(&key_nfa);
+  initialize_nfa(&op_nfa);
+  initialize_nfa(&endl_nfa);
 
-  dfa *dfa;
+  dfa *int_dfa, *key_dfa, *op_dfa, *endl_dfa;
   char *code = (char *)malloc(1);
 
-  std::cout << "Start tokenizing regexp" << endl;
-  auto tokens = re_tokenize(GLOBAL_REGEXP);
-  auto postfixTokens = re_to_postfix(tokens);
-  std::cout << "Start building thompson tree" << endl;
-  std::shared_ptr<regex_node> tree = build_thompson_tree(postfixTokens);
+  std::cout << "Building trees of operations for scanner Regexps" << endl;
 
-  std::cout << "Tree of operations: " << std::endl;
-  tree->print();
+  auto int_re_tok = re_tokenize(INTEGER_REGEXP);
+  auto int_re_tok_post = re_to_postfix(int_re_tok);
+  std::shared_ptr<regex_node> int_optree = build_thompson_tree(int_re_tok_post);
+
+  auto key_re_tok = re_tokenize(KEYWORD_REGEXP);
+  auto key_re_tok_post = re_to_postfix(key_re_tok);
+  std::shared_ptr<regex_node> key_optree = build_thompson_tree(key_re_tok_post);
+
+  //auto op_re_tok = re_tokenize(OPERATOR_REGEXP);
+  //auto op_re_tok_post = re_to_postfix(op_re_tok);
+  //std::shared_ptr<regex_node> op_optree = build_thompson_tree(op_re_tok_post);
+
+  auto endl_re_tok = re_tokenize(END_LINE_REGEXP);
+  auto endl_re_tok_post = re_to_postfix(endl_re_tok);
+  std::shared_ptr<regex_node> endl_optree = build_thompson_tree(endl_re_tok_post);
+
+  std::cout << "Tree of operations (INT SCANNER): " << std::endl;
+  int_optree->print();
+  std::cout << std::endl;
+  std::cout << "Tree of operations (KEYWORD SCANNER): " << std::endl;
+  key_optree->print();
+  std::cout << std::endl;
+  //std::cout << "Tree of operations (OPERATOR SCANNER): " << std::endl;
+  //op_optree->print();
+  //std::cout << std::endl;
+  std::cout << "Tree of operations (ENDLINE SCANNER): " << std::endl;
+  endl_optree->print();
   std::cout << std::endl;
 
-  cout << "Converting regexp to nfa" << endl;
-  thompson_construction(&nfa, tree);
-  cout << "Converting nfa to dfa" << endl;
-  subset_construction(&nfa, dfa);
-  cout << "Minimizing the dfa" << endl;
-  // minimize_dfa(dfa);
+
+  cout << "Converting INT Optree to nfa" << endl;
+  thompson_construction(&int_nfa, int_optree);
+  cout << "Converting INT nfa to dfa" << endl;
+  subset_construction(&int_nfa, int_dfa);
+  cout << "Minimizing the INT dfa" << endl;
+
+  // minimize_dfa(int_dfa);
   cout << "Generate scanner C++ code as a file." << endl;
-  // generate_scanner_code(dfa);
+  generate_scanner_code(int_dfa, key_dfa, op_dfa, endl_dfa);
 
   free(code);
   return 0;
