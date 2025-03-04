@@ -73,17 +73,23 @@ struct regex_node {
              std::shared_ptr<regex_node> r = nullptr, std::string v = "")
       : variant(t), left(l), right(r), value(v) {}
 
-  void print() {
+  void print(int indent = 0) {
+    std::string padding(indent, ' '); // Indentation for tree structure
     if (variant == 0) {
-      print_literal();
+      std::cout << padding << "📄 Literal: " << value << "\n";
     } else if (variant == 1) {
-      print_union();
+      std::cout << padding << "🔀 Union\n";
+      left->print(indent + 4);
+      right->print(indent + 4);
     } else if (variant == 2) {
-      print_concat();
+      std::cout << padding << "🔗 Concat\n";
+      left->print(indent + 4);
+      right->print(indent + 4);
     } else if (variant == 3) {
-      print_kleene();
+      std::cout << padding << "⭐ Kleene Star\n";
+      left->print(indent + 4);
     } else {
-      std::cout << "Wrong Regex node type" << std::endl;
+      std::cout << padding << "⚠️ Wrong Regex node type\n";
       exit(EXIT_FAILURE);
     }
   }
@@ -522,25 +528,22 @@ int construct_scanner() {
   nfa nfa;
   initialize_nfa(&nfa);
 
-  std::raise(SIGINT);
-
   dfa *dfa;
   char *code = (char *)malloc(1);
 
-  std::cout << "Tree of operations: ";
+  std::cout << "Start tokenizing regexp" << endl;
   auto tokens = re_tokenize(GLOBAL_REGEXP);
   auto postfixTokens = re_to_postfix(tokens);
-  std::cout << "Build thompson tree" << endl;
+  std::cout << "Start building thompson tree" << endl;
   std::shared_ptr<regex_node> tree = build_thompson_tree(postfixTokens);
 
-  std::cout << "Tree of operations: ";
+  std::cout << "Tree of operations: " << std::endl;
   tree->print();
   std::cout << std::endl;
 
   cout << "Converting regexp to nfa" << endl;
   thompson_construction(&nfa, tree);
   cout << "Converting nfa to dfa" << endl;
-  // TODO : THIS IF FAILING DUE TO HASHING OF STATES SETS
   subset_construction(&nfa, dfa);
   cout << "Minimizing the dfa" << endl;
   // minimize_dfa(dfa);
