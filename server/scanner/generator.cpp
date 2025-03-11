@@ -130,13 +130,13 @@ struct regex_node {
 /**
  * initialize_nfa - Allocates start and stop state for an nfa.
  */
-void initialize_nfa(nfa &nfa) {
+void initialize_nfa(nfa &n) {
     state start = state{uuid::generate_uuid_v4()};
     state accept = state{uuid::generate_uuid_v4()};
-    nfa.states[start.name] = start;
-    nfa.states[accept.name] = accept;
-    nfa.start = start.name;
-    nfa.accept.insert(accept.name);
+    n.states[start.name] = start;
+    n.states[accept.name] = accept;
+    n.start = start.name;
+    n.accept.push_back(accept.name);
 }
 
 /**
@@ -212,6 +212,20 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
     }
 }
 
+
+/**
+ * merge_categories_nfa - Given nfas for each synthactic category, build a global 
+ * nfa tha'll be able to recognize any of them.
+ *
+ */
+static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa, nfa &glob_nfa) {
+    nfa_append(int_nfa, glob_nfa);
+    nfa_append(key_nfa, glob_nfa);
+    nfa_append(op_nfa, glob_nfa);
+    
+
+}
+
 /**
  * full_concat_construct - Generates an NFA concatenation construct (ab) given
  * two nfas. It's a "full" construct, meaning all accepting states are mapped to
@@ -282,7 +296,7 @@ static void full_kleene_construct(nfa& a) {
 
     a.start = new_start.name;
     a.accept.clear();
-    a.accept.insert(new_accept.name);
+    a.accept.push_back(new_accept.name);
     a.states[new_start.name] = new_start;
     a.states[new_accept.name] = new_accept;
 
@@ -581,6 +595,7 @@ int construct_scanner() {
     initialize_nfa(key_nfa);
     initialize_nfa(op_nfa);
     initialize_nfa(endl_nfa);
+    initialize_nfa(glob_nfa);
 
     dfa *int_dfa, *key_dfa, *op_dfa, *endl_dfa, *glob_dfa;
     char *code = (char *)malloc(1);
@@ -618,11 +633,16 @@ int construct_scanner() {
     std::cout << std::endl;
 
     cout << "Converting INT Optree to nfa" << endl;
-    thompson_construction(&int_nfa, int_optree);
+    thompson_construction(int_nfa, int_optree);
     cout << "Converting KEYWORD Optree to nfa" << endl;
-    thompson_construction(&key_nfa, key_optree);
+    thompson_construction(key_nfa, key_optree);
     cout << "Converting ENDLINE Optree to nfa" << endl;
-    thompson_construction(&int_nfa, endl_optree);
+    thompson_construction(endl_nfa, endl_optree);
+    
+    cout << "Merging INT, KEYWORD, ENDLING nfas to a global NFA" << endl;
+    merge_categories_nfa(int_nfa, key_nfa, op_nfa, glob_nfa);
+
+
 
     cout << "Converting Global nfa to dfa" << endl;
     subset_construction(&glob_nfa, glob_dfa);
@@ -641,14 +661,14 @@ int construct_scanner() {
 
 int test_full_concat_construct() {
     nfa a, b, result;
-    initialize_nfa(&a);
-    initialize_nfa(&b);
-    initialize_nfa(&result);
+    initialize_nfa(a);
+    initialize_nfa(b);
+    initialize_nfa(result);
 
-    add_delta_nfa(&a, a.start, a.accept, 'c');
-    add_delta_nfa(&b, b.start, b.accept, 'd');
+    add_delta_nfa(a, a.start, a.accept, 'c');
+    add_delta_nfa(b, b.start, b.accept, 'd');
 
-    full_concat_construct(&a, &b, &result);
+    full_concat_construct(a, b, &result);
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
@@ -659,14 +679,14 @@ int test_full_concat_construct() {
 
 int test_full_union_construct() {
     nfa a, b, result;
-    initialize_nfa(&a);
-    initialize_nfa(&b);
-    initialize_nfa(&result);
+    initialize_nfa(a);
+    initialize_nfa(b);
+    initialize_nfa(result);
 
-    add_delta_nfa(&a, a.start, a.accept, 'c');
-    add_delta_nfa(&b, b.start, b.accept, 'd');
+    add_delta_nfa(a, a.start, a.accept, 'c');
+    add_delta_nfa(b, b.start, b.accept, 'd');
 
-    full_union_construct(&a, &b, &result);
+    full_union_construct(a, b, &result);
 
     assert(result.deltas.epsilon_transitions[result.start].size() == 2);
     assert(result.deltas.epsilon_transitions[a.accept].size() == 1);
@@ -677,8 +697,8 @@ int test_full_union_construct() {
 
 int test_kleene_construct() {
     nfa a;
-    initialize_nfa(&a);
-    kleene_construct(&a);
+    initialize_nfa(a);
+    kleene_construct(a);
 
     assert(a.deltas.epsilon_transitions[a.start].size() == 2);
     assert(a.deltas.transitions[a.start].size() == 0);
