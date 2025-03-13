@@ -577,7 +577,7 @@ static void generate_scanner_code(dfa &glob_dfa) {
             " */\n"
             "size_t lexe(Tokens* tokens, char* str, ssize_t str_size) \n"
             "{\n"
-                "switch(state){\n";
+                "    switch(state){\n";
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
         
@@ -603,7 +603,7 @@ static void generate_scanner_code(dfa &glob_dfa) {
             }
         }
         
-        content = "    return 0;\n }\n";
+        content = "}\n    return 0;\n}\n";
         fprintf(fp, "%s", content.c_str()); // Write content to the file
         fclose(fp);                 // Correct way to close FILE*
     } else {
