@@ -576,7 +576,7 @@ static void generate_scanner_code(dfa &glob_dfa) {
             "heap\n"
             " *\n"
             " */\n"
-            "size_t lexe(Tokens* tokens, char* str, ssize_t str_size) \n"
+            "size_t lexe(Tokens &tokens, string str) \n"
             "{\n"
                 "\tstring state = " +glob_dfa.start+";\n"
                 "\tswitch(state){\n";

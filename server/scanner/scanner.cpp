@@ -1,5 +1,4 @@
 #include "scanner.h"
-
 #include <string>
 
 /**
@@ -8,7 +7,7 @@
  */
 size_t lexe(Tokens* tokens, char* str, ssize_t str_size) 
 {
-string state = ;
+	string state = ;
 	switch(state){
 	default:
 		 perror("State unknown in the DFA");
