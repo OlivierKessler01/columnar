@@ -130,28 +130,31 @@ struct regex_node {
 /**
  * initialize_nfa - Allocates start and stop state for an nfa.
  */
-void initialize_nfa(nfa &n) {
+void initialize_nfa(nfa &n, bool add_accept_state = true) {
     state start = state{uuid::generate_uuid_v4()};
-    state accept = state{uuid::generate_uuid_v4()};
     n.states[start.name] = start;
-    n.states[accept.name] = accept;
     n.start = start.name;
-    n.accept.push_back(accept.name);
+
+    if(add_accept_state) {
+        state accept_state = state{uuid::generate_uuid_v4()};
+        n.states[accept_state.name] = accept_state;
+        n.accept[accept_state.name] = keyword;
+    }
 }
 
 /**
  * e_closure - Takes a set of states, returns a set of states reacheable via
  * only epsilon transitions/closures.
  */
-void e_closure(std::unordered_set<state, state::hash_function> *q,
-               std::unordered_set<state, state::hash_function> *result) {}
+void e_closure(std::unordered_set<state, state::hash_function> &q,
+               std::unordered_set<state, state::hash_function> &result) {}
 
 /**
  * delta - Applies the transition function to each element of
  * q, given a char c.
  */
-void delta_func(std::unordered_set<state, state::hash_function> *q,
-                std::unordered_set<state, state::hash_function> *result,
+void delta_func(std::unordered_set<state, state::hash_function> &q,
+                std::unordered_set<state, state::hash_function> &result,
                 char c) {}
 
 /**
@@ -204,11 +207,13 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
     result.deltas.epsilon_transitions[result.start].push_back(a.start);
     result.deltas.epsilon_transitions[result.start].push_back(b.start);
 
-    for (auto &acc : a.accept) {
-        result.deltas.epsilon_transitions[acc].push_back(result.accept[0]);
+    for (auto &[acc, cat] : a.accept) {
+        for(auto &[res_acc, res_cat]: result.accept)
+            result.deltas.epsilon_transitions[acc].push_back(res_acc);
     }
-    for (auto &acc : b.accept) {
-        result.deltas.epsilon_transitions[acc].push_back(result.accept[0]);
+    for (auto &[acc,cat] : b.accept) {
+        for(auto &[res_acc, res_cat]: result.accept)
+            result.deltas.epsilon_transitions[acc].push_back(res_acc);
     }
 }
 
@@ -216,14 +221,15 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
 /**
  * merge_categories_nfa - Given nfas for each synthactic category, build a global 
  * nfa tha'll be able to recognize any of them.
- *
  */
-static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa, nfa &glob_nfa) {
-    nfa_append(int_nfa, glob_nfa);
-    nfa_append(key_nfa, glob_nfa);
-    nfa_append(op_nfa, glob_nfa);
+static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa, nfa &result_nfa) {
+    nfa_append(int_nfa, result_nfa);
+    nfa_append(key_nfa, result_nfa);
+    nfa_append(op_nfa, result_nfa);
     
-
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(int_nfa.start);
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(key_nfa.start);
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(op_nfa.start);
 }
 
 /**
@@ -250,10 +256,10 @@ static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
     nfa_append(a, result);
     nfa_append(b, result);
     result.start = a.start;
-    result.accept.assign(b.accept.begin(), b.accept.end());
+    result.accept = b.accept;
 
     // Add the epsilon transitions
-    for (auto &acc : a.accept) {
+    for (auto &[acc,cat] : a.accept) {
         result.deltas.epsilon_transitions[acc].push_back(b.start);
     }
 }
@@ -287,25 +293,25 @@ static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
  */
 static void full_kleene_construct(nfa& a) {
     string old_start;
-    vector<string> old_accept;
+    unordered_map<string, synthax_cat> old_accept;
     old_start = a.start;
-    old_accept.assign(a.accept.begin(), a.accept.end());
+    old_accept = a.accept;
 
     state new_start = state{uuid::generate_uuid_v4()};
     state new_accept = state{uuid::generate_uuid_v4()};
 
     a.start = new_start.name;
     a.accept.clear();
-    a.accept.push_back(new_accept.name);
+    a.accept[new_accept.name] = keyword;
     a.states[new_start.name] = new_start;
     a.states[new_accept.name] = new_accept;
 
-    a.deltas.epsilon_transitions[new_start.name].push_back(a.accept[0]);
+    a.deltas.epsilon_transitions[new_start.name].push_back(new_accept.name);
     a.deltas.epsilon_transitions[new_start.name].push_back(old_start);
 
-    for (auto &old_acc : old_accept) {
+    for (auto &[old_acc,cat] : old_accept) {
         a.deltas.epsilon_transitions[old_acc].push_back(old_start);
-        a.deltas.epsilon_transitions[old_acc].push_back(a.accept[0]);
+        a.deltas.epsilon_transitions[old_acc].push_back(new_accept.name);
     }
 }
 
@@ -500,7 +506,7 @@ struct state_set_pred {
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
-static void subset_construction(nfa *nfa, dfa *dfa) {
+static void subset_construction(nfa &nfa, dfa &dfa) {
     std::unordered_set<state, state::hash_function> q0, q, n0_set, t, result;
 
     std::unordered_set<std::unordered_set<state, state::hash_function>,
@@ -514,8 +520,8 @@ static void subset_construction(nfa *nfa, dfa *dfa) {
         state_set_hash, state_set_pred>
         big_t;
 
-    n0_set.insert(nfa->states[nfa->start]);
-    e_closure(&n0_set, &q0);
+    n0_set.insert(nfa.states[nfa.start]);
+    e_closure(n0_set, q0);
 
     big_q.insert(q0);
     worklist.insert(q0);
@@ -531,11 +537,11 @@ static void subset_construction(nfa *nfa, dfa *dfa) {
         // Remove the element from the set
         worklist.erase(q);
 
-        for (auto character : nfa->sigma) {
+        for (auto character : nfa.sigma) {
             result.clear();
             t.clear();
-            delta_func(&q, &result, character);
-            e_closure(&result, &t);
+            delta_func(q, result, character);
+            e_closure(result, t);
 
             big_t[q][character] = t;
 
@@ -551,20 +557,18 @@ static void subset_construction(nfa *nfa, dfa *dfa) {
  * minimize_dfa - Remove duplicates states from the dfa using
  * partitionning/segregation
  */
-static void minimize_dfa(dfa *dfa) {
+static void minimize_dfa(dfa &dfa) {
     // TODO: Minimize the DFA
 }
 
 /**
  * generate_scanner_code() - Generate the scanner code as a file.
  */
-static void generate_scanner_code(dfa *int_dfa, dfa *key_dfa, dfa *op_dfa,
-                                  dfa *endl_dfa) {
-    FILE *fp =
-        fopen("server/scanner/scanner.cpp", "a"); // Open file in append mode
+static void generate_scanner_code(dfa &glob_dfa) {
+    FILE *fp = fopen("server/scanner/scanner.cpp", "w"); // Open file in write mode
 
     if (fp != NULL) {
-        const char *content =
+        std::string content =
             "#include \"scanner.h\"\n\n"
             "/**\n"
             " * lexe - Given a request and a list of tokens allocated on the "
@@ -573,10 +577,34 @@ static void generate_scanner_code(dfa *int_dfa, dfa *key_dfa, dfa *op_dfa,
             " */\n"
             "size_t lexe(Tokens* tokens, char* str, ssize_t str_size) \n"
             "{\n"
-            "    return 0;\n"
-            "}\n";
+                "switch(state){\n";
 
-        fprintf(fp, "%s", content); // Write content to the file
+        fprintf(fp, "%s", content.c_str()); // Write content to the file
+        
+        for(const auto &[state_uid,state]: glob_dfa.states){
+            string case_statement = "     case   " + state_uid+ ":"; 
+            fprintf(fp, "%s", case_statement.c_str()); 
+             
+            auto it = glob_dfa.accept.find(state_uid);
+            if(it != glob_dfa.accept.end()){
+                //The current state is a final step, 
+                //save the current buffer as maximum munch.
+            } else {
+                auto next = glob_dfa.deltas.transitions[state_uid];
+                for (const auto &[ch, next_state] : next) {
+                    string transition = "            if (input == '" + string(1, ch) + "') state = " + next_state + ";\n";
+                    fprintf(fp, "%s", transition.c_str());
+                }
+                
+                //If program arrives here, it means no transition for current char, 
+                //try to rollack.
+                string rollback = "            rollback();\n";
+                fprintf(fp, "%s", rollback.c_str());
+            }
+        }
+        
+        content = "    return 0;\n }\n";
+        fprintf(fp, "%s", content.c_str()); // Write content to the file
         fclose(fp);                 // Correct way to close FILE*
     } else {
         printf("Unable to write to the scanner file. Abort\n");
@@ -595,9 +623,9 @@ int construct_scanner() {
     initialize_nfa(key_nfa);
     initialize_nfa(op_nfa);
     initialize_nfa(endl_nfa);
-    initialize_nfa(glob_nfa);
+    initialize_nfa(glob_nfa, false);
 
-    dfa *int_dfa, *key_dfa, *op_dfa, *endl_dfa, *glob_dfa;
+    dfa glob_dfa;
     char *code = (char *)malloc(1);
 
     std::cout << "Building trees of operations for scanner Regexps" << endl;
@@ -641,16 +669,15 @@ int construct_scanner() {
     
     cout << "Merging INT, KEYWORD, ENDLING nfas to a global NFA" << endl;
     merge_categories_nfa(int_nfa, key_nfa, op_nfa, glob_nfa);
-
-
+    
 
     cout << "Converting Global nfa to dfa" << endl;
-    subset_construction(&glob_nfa, glob_dfa);
+    subset_construction(glob_nfa, glob_dfa);
     cout << "Minimizing the dfa" << endl;
 
     // minimize_dfa(int_dfa);
     cout << "Generate scanner C++ code as a file." << endl;
-    generate_scanner_code(int_dfa, key_dfa, op_dfa, endl_dfa);
+    generate_scanner_code(glob_dfa);
 
     free(code);
     return 0;
