@@ -569,7 +569,8 @@ static void generate_scanner_code(dfa &glob_dfa) {
 
     if (fp != NULL) {
         std::string content =
-            "#include \"scanner.h\"\n\n"
+            "#include \"scanner.h\"\n"
+            "#include <string>\n\n"
             "/**\n"
             " * lexe - Given a request and a list of tokens allocated on the "
             "heap\n"
@@ -577,12 +578,13 @@ static void generate_scanner_code(dfa &glob_dfa) {
             " */\n"
             "size_t lexe(Tokens* tokens, char* str, ssize_t str_size) \n"
             "{\n"
-                "    switch(state){\n";
+                "\tstring state = " +glob_dfa.start+";\n"
+                "\tswitch(state){\n";
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
         
         for(const auto &[state_uid,state]: glob_dfa.states){
-            string case_statement = "     case   " + state_uid+ ":"; 
+            string case_statement = "\tcase " + state_uid+ ":"; 
             fprintf(fp, "%s", case_statement.c_str()); 
              
             auto it = glob_dfa.accept.find(state_uid);
@@ -592,7 +594,7 @@ static void generate_scanner_code(dfa &glob_dfa) {
             } else {
                 auto next = glob_dfa.deltas.transitions[state_uid];
                 for (const auto &[ch, next_state] : next) {
-                    string transition = "            if (input == '" + string(1, ch) + "') state = " + next_state + ";\n";
+                    string transition = "\t\tif (input == '" + string(1, ch) + "') state = " + next_state + ";\n";
                     fprintf(fp, "%s", transition.c_str());
                 }
                 
@@ -603,8 +605,11 @@ static void generate_scanner_code(dfa &glob_dfa) {
             }
         }
         
-        content = "}\n    return 0;\n}\n";
-        fprintf(fp, "%s", content.c_str()); // Write content to the file
+        string def = "\tdefault:\n\t\t perror(\"State unknown in the DFA\");\n\t\t exit(EXIT_FAILURE);\n";
+        string end = "\t}\n    return 0;\n}\n";
+
+        fprintf(fp, "%s", def.c_str()); // Write content to the file
+        fprintf(fp, "%s", end.c_str()); // Write content to the file
         fclose(fp);                 // Correct way to close FILE*
     } else {
         printf("Unable to write to the scanner file. Abort\n");
