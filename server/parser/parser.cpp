@@ -9,7 +9,7 @@
 #include "../scanner/scanner.h"
 #include <sys/types.h>
 
-ssize_t parse(Tokens* tokens)
+ssize_t parse(Tokens &tokens)
 {
     return 0;
 }

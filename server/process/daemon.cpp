@@ -65,17 +65,11 @@ static int process_request(configuration_t* config, int accepted_fd){
     int bytes_read;
     int new_size;
     char req_buf[REQ_BUF_LEN] = {0};
-    char* dyn_log_buffer;
-
-    //Initialize the string that will contain the request
+    std::string dyn_log_buffer;
+    std::string response;
     int req_acc_len = 0;
-    char * req_acc = (char*)malloc(sizeof(char)*1);
-    if(req_acc == NULL){
-        syslog(LOG_ERR, "Error malloc'ing for request buffer");
-        exit(EXIT_FAILURE);
-    }
-    int len_response = 0;
-    char* response = (char*) malloc(sizeof(char)*1);
+    int status;
+    std::string req_acc = "";
 
     //Read the incoming request
     //
@@ -89,41 +83,23 @@ static int process_request(configuration_t* config, int accepted_fd){
             write(accepted_fd, text, strlen(text));
         }
 
-        req_acc = (char*)realloc(req_acc, new_size);
-        if(req_acc == NULL){
-            syslog(LOG_ERR, "Error realloc'ing for request buffer");
-            free(req_acc);
-            exit(EXIT_FAILURE);
-        }
-
         for (int i =0; i < bytes_read;i++){
-            req_acc[i+req_acc_len] = req_buf[i];    
+            req_acc+=req_buf[i];
         }
-        req_acc_len=new_size;
         
         //TODO : Add a timeout in case the client sends a partial request
         //missin the \n
         if(req_acc[req_acc_len -1] == '\n'){
-            //The whole request has been transmitted
-            //start the parsing process
+            //The whole request has been transmitted start the parsing process
             break; 
         }
     }
     
-    dyn_log_buffer = (char*)malloc(sizeof(char) * new_size+50);
-    sprintf(dyn_log_buffer, "Received request: %s", req_acc);
-    //syslog(LOG_INFO,"Received request: %s", req_acc);
-    //outputFile << dyn_log_buffer << std::endl;
-   
     //Run the query (lexe+parser+build query plan+ run query plan)
-    if((len_response = run_query(response, req_acc, req_acc_len)) == -1){
+    if((status = run_query(response, req_acc)) == -1){
         syslog(LOG_ERR, "Error realloc'ing for request buffer");
-        //outputFile << "Query execution failed." << std::endl;
     }
-    free(req_acc);
-    free(dyn_log_buffer);
-    write(accepted_fd, response, len_response);
-    free(response);
+    write(accepted_fd, response.c_str(), response.size());
     close(accepted_fd);
     return 1;
 }
@@ -163,16 +139,15 @@ static int run(configuration* config) {
     struct sockaddr_in server_addr;
     socklen_t server_addr_len = sizeof(server_addr);
     /* Create the link to the syslog file */
-    //std::ofstream outputFile(config->log_file_path, std::ios::app);
+    std::ofstream outputFile(config->log_file_path, std::ios::app);
     int bind_res;
     static pool pool;
 
     // Check if the file is opened successfully
-    //if (!outputFile.is_open()) {
-     //   syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
-   //     exit(EXIT_FAILURE);
-    //}
-   
+    if (!outputFile.is_open()) {
+        syslog(LOG_ERR, "Failed to open the log file. Check your config and that it is writeable by columnar.");
+        exit(EXIT_FAILURE);
+    }
 
     // Create a socket
     if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {

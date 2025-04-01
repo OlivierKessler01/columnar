@@ -1,3 +1,4 @@
+#include <string>
 #include <sys/types.h>
 
-ssize_t run_query(char *response, char* query, ssize_t query_len);
+int run_query(std::string &response, std::string query);
