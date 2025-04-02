@@ -1,4 +1,4 @@
-CC = clang 
+CC = clang++
 CFLAGS = -std=c++20 -MJ compile_commands.json
 RED    := \033[31m
 GREEN  := \033[32m

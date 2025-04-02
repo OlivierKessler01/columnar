@@ -135,7 +135,7 @@ void initialize_nfa(nfa &n, bool add_accept_state = true) {
     n.states[start.name] = start;
     n.start = start.name;
 
-    if(add_accept_state) {
+    if (add_accept_state) {
         state accept_state = state{uuid::generate_uuid_v4()};
         n.states[accept_state.name] = accept_state;
         n.accept[accept_state.name] = keyword;
@@ -208,28 +208,31 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
     result.deltas.epsilon_transitions[result.start].push_back(b.start);
 
     for (auto &[acc, cat] : a.accept) {
-        for(auto &[res_acc, res_cat]: result.accept)
+        for (auto &[res_acc, res_cat] : result.accept)
             result.deltas.epsilon_transitions[acc].push_back(res_acc);
     }
-    for (auto &[acc,cat] : b.accept) {
-        for(auto &[res_acc, res_cat]: result.accept)
+    for (auto &[acc, cat] : b.accept) {
+        for (auto &[res_acc, res_cat] : result.accept)
             result.deltas.epsilon_transitions[acc].push_back(res_acc);
     }
 }
 
-
 /**
- * merge_categories_nfa - Given nfas for each synthactic category, build a global 
- * nfa tha'll be able to recognize any of them.
+ * merge_categories_nfa - Given nfas for each synthactic category, build a
+ * global nfa tha'll be able to recognize any of them.
  */
-static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa, nfa &result_nfa) {
+static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa,
+                                 nfa &result_nfa) {
     nfa_append(int_nfa, result_nfa);
     nfa_append(key_nfa, result_nfa);
     nfa_append(op_nfa, result_nfa);
-    
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(int_nfa.start);
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(key_nfa.start);
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(op_nfa.start);
+
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
+        int_nfa.start);
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
+        key_nfa.start);
+    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
+        op_nfa.start);
 }
 
 /**
@@ -259,15 +262,15 @@ static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
     result.accept = b.accept;
 
     // Add the epsilon transitions
-    for (auto &[acc,cat] : a.accept) {
+    for (auto &[acc, cat] : a.accept) {
         result.deltas.epsilon_transitions[acc].push_back(b.start);
     }
 }
 
 /**
- * full_kleene_constuct - Generates an NFA Kleene's closure (a*) construct from an
- * nfa. It's a "full" construct, meaning all accepting states are mapped to the
- * output.
+ * full_kleene_constuct - Generates an NFA Kleene's closure (a*) construct from
+ * an nfa. It's a "full" construct, meaning all accepting states are mapped to
+ * the output.
  *
  * In place algorithm.
  *
@@ -291,7 +294,7 @@ static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
  *            v          v
  *        (New Accepting State)
  */
-static void full_kleene_construct(nfa& a) {
+static void full_kleene_construct(nfa &a) {
     string old_start;
     unordered_map<string, synthax_cat> old_accept;
     old_start = a.start;
@@ -309,7 +312,7 @@ static void full_kleene_construct(nfa& a) {
     a.deltas.epsilon_transitions[new_start.name].push_back(new_accept.name);
     a.deltas.epsilon_transitions[new_start.name].push_back(old_start);
 
-    for (auto &[old_acc,cat] : old_accept) {
+    for (auto &[old_acc, cat] : old_accept) {
         a.deltas.epsilon_transitions[old_acc].push_back(old_start);
         a.deltas.epsilon_transitions[old_acc].push_back(new_accept.name);
     }
@@ -565,7 +568,8 @@ static void minimize_dfa(dfa &dfa) {
  * generate_scanner_code() - Generate the scanner code as a file.
  */
 static void generate_scanner_code(dfa &glob_dfa) {
-    FILE *fp = fopen("server/scanner/scanner.cpp", "w"); // Open file in write mode
+    FILE *fp =
+        fopen("server/scanner/scanner.cpp", "w"); // Open file in write mode
 
     if (fp != NULL) {
         std::string content =
@@ -576,41 +580,45 @@ static void generate_scanner_code(dfa &glob_dfa) {
             "heap\n"
             " *\n"
             " */\n"
-            "size_t lexe(Tokens &tokens, string str) \n"
+            "ssize_t lexe(Tokens &tokens, string str) \n"
             "{\n"
-                "\tstring state = " +glob_dfa.start+";\n"
-                "\tswitch(state){\n";
+            "\tstring state = " +
+            glob_dfa.start +
+            ";\n"
+            "\tswitch(state){\n";
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
-        
-        for(const auto &[state_uid,state]: glob_dfa.states){
-            string case_statement = "\tcase " + state_uid+ ":"; 
-            fprintf(fp, "%s", case_statement.c_str()); 
-             
+
+        for (const auto &[state_uid, state] : glob_dfa.states) {
+            string case_statement = "\tcase " + state_uid + ":";
+            fprintf(fp, "%s", case_statement.c_str());
+
             auto it = glob_dfa.accept.find(state_uid);
-            if(it != glob_dfa.accept.end()){
-                //The current state is a final step, 
-                //save the current buffer as maximum munch.
+            if (it != glob_dfa.accept.end()) {
+                // The current state is a final step,
+                // save the current buffer as maximum munch.
             } else {
                 auto next = glob_dfa.deltas.transitions[state_uid];
                 for (const auto &[ch, next_state] : next) {
-                    string transition = "\t\tif (input == '" + string(1, ch) + "') state = " + next_state + ";\n";
+                    string transition = "\t\tif (input == '" + string(1, ch) +
+                                        "') state = " + next_state + ";\n";
                     fprintf(fp, "%s", transition.c_str());
                 }
-                
-                //If program arrives here, it means no transition for current char, 
-                //try to rollack.
+
+                // If program arrives here, it means no transition for current
+                // char, try to rollack.
                 string rollback = "            rollback();\n";
                 fprintf(fp, "%s", rollback.c_str());
             }
         }
-        
-        string def = "\tdefault:\n\t\t perror(\"State unknown in the DFA\");\n\t\t exit(EXIT_FAILURE);\n";
+
+        string def = "\tdefault:\n\t\t perror(\"State unknown in the "
+                     "DFA\");\n\t\t exit(EXIT_FAILURE);\n";
         string end = "\t}\n    return 0;\n}\n";
 
         fprintf(fp, "%s", def.c_str()); // Write content to the file
         fprintf(fp, "%s", end.c_str()); // Write content to the file
-        fclose(fp);                 // Correct way to close FILE*
+        fclose(fp);                     // Correct way to close FILE*
     } else {
         printf("Unable to write to the scanner file. Abort\n");
         exit(EXIT_FAILURE);
@@ -671,10 +679,9 @@ int construct_scanner() {
     thompson_construction(key_nfa, key_optree);
     cout << "Converting ENDLINE Optree to nfa" << endl;
     thompson_construction(endl_nfa, endl_optree);
-    
+
     cout << "Merging INT, KEYWORD, ENDLING nfas to a global NFA" << endl;
     merge_categories_nfa(int_nfa, key_nfa, op_nfa, glob_nfa);
-    
 
     cout << "Converting Global nfa to dfa" << endl;
     subset_construction(glob_nfa, glob_dfa);

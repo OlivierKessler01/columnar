@@ -2,7 +2,7 @@
 #include "../parser/parser.h"
 #include <cstdlib>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include <sys/syslog.h>
 
 
@@ -12,7 +12,7 @@
  *
  * Return the response.
  */
-int run_query(string &response, string query)
+int run_query(string &response, std::string query)
 {
     //syslog(LOG_INFO, "in run_query() function");
     Tokens tokens;

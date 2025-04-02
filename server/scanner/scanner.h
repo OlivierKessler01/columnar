@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <string>
 #include "generator.h"
 
 struct token {
@@ -22,4 +23,4 @@ struct Tokens {
 /**
  * lexe - Given a request and a list of tokens allocated on the heap
  */
-size_t lexe(Tokens &tokens, string str);
+ssize_t lexe(Tokens &tokens, std::string str);

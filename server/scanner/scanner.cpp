@@ -5,7 +5,7 @@
  * lexe - Given a request and a list of tokens allocated on the heap
  *
  */
-size_t lexe(Tokens* tokens, string str) 
+ssize_t lexe(Tokens &tokens, std::string str) 
 {
 	string state = "";
     if (state == ""){
