@@ -6,7 +6,6 @@
  *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
  */
 
-#include <fstream>
 #include <iostream>
 #include <unordered_set>
 
@@ -161,18 +160,17 @@ void delta_func(std::unordered_set<state, state::hash_function> &q,
  * nfa_append - Copies states and transitions from one nfa to another
  */
 static void nfa_append(nfa &src, nfa &dest) {
-    for (const auto &[key, value] : src.states) {
-        dest.states[key] = value; // Insert or overwrite the value for the key
-    }
+    dest.states.insert(src.states.begin(), src.states.end());
+    dest.deltas.transitions.insert(src.deltas.transitions.begin(), src.deltas.transitions.end());
+    dest.deltas.epsilon_transitions.insert(src.deltas.epsilon_transitions.begin(), src.deltas.epsilon_transitions.end());
 }
 
 /**
  * add_delta_nfa - Use this function to add a non-epsilon transition to an nfa
  * to maintain a correct sigma set.
  */
-static void add_delta_nfa(nfa *nfa, string from_id, string to_id,
-                          char character) {
-    nfa->deltas.transitions[from_id][character] = to_id;
+static void add_delta_nfa(nfa &nfa, string from_id, string to_id, char character) {
+    nfa.deltas.transitions[from_id][character] = to_id;
 }
 
 /**
@@ -335,7 +333,7 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
     }
     nfa nfa_left, nfa_right;
     initialize_nfa(nfa_left);
-    initialize_nfa(nfa_left);
+    initialize_nfa(nfa_right);
 
     if (node->variant == 2) {
         thompson_construction(nfa_left, node->left);
@@ -632,10 +630,10 @@ static void generate_scanner_code(dfa &glob_dfa) {
  */
 int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
-    initialize_nfa(int_nfa);
-    initialize_nfa(key_nfa);
-    initialize_nfa(op_nfa);
-    initialize_nfa(endl_nfa);
+    initialize_nfa(int_nfa, false);
+    initialize_nfa(key_nfa, false);
+    initialize_nfa(op_nfa, false);
+    initialize_nfa(endl_nfa, false);
     initialize_nfa(glob_nfa, false);
 
     dfa glob_dfa;
@@ -704,14 +702,19 @@ int test_full_concat_construct() {
     initialize_nfa(b);
     initialize_nfa(result);
 
-    add_delta_nfa(a, a.start, a.accept, 'c');
-    add_delta_nfa(b, b.start, b.accept, 'd');
+    auto any_a_acc = a.accept.begin();
+    auto any_b_acc = b.accept.begin();
+    add_delta_nfa(a, a.start, any_a_acc->first, 'c');
+    add_delta_nfa(b, b.start, any_b_acc->first, 'd');
 
-    full_concat_construct(a, b, &result);
+    full_concat_construct(a, b, result);
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
-    assert(result.deltas.epsilon_transitions[a.accept].size() == 1);
+
+    for (auto &[name, cat] : a.accept) {
+        assert(result.deltas.epsilon_transitions[name].size() == 1);
+    }
 
     return EXIT_SUCCESS;
 }
@@ -722,22 +725,29 @@ int test_full_union_construct() {
     initialize_nfa(b);
     initialize_nfa(result);
 
-    add_delta_nfa(a, a.start, a.accept, 'c');
-    add_delta_nfa(b, b.start, b.accept, 'd');
+    auto any_a_acc = a.accept.begin();
+    auto any_b_acc = b.accept.begin();
+    add_delta_nfa(a, a.start, any_a_acc->first, 'c');
+    add_delta_nfa(b, b.start, any_b_acc->first, 'd');
 
-    full_union_construct(a, b, &result);
+    full_union_construct(a, b, result);
 
     assert(result.deltas.epsilon_transitions[result.start].size() == 2);
-    assert(result.deltas.epsilon_transitions[a.accept].size() == 1);
-    assert(result.deltas.epsilon_transitions[b.accept].size() == 1);
+
+    for (auto &[name, cat] : b.accept) {
+        assert(result.deltas.epsilon_transitions[name].size() == 1);
+    }
+    for (auto &[name, cat] : a.accept) {
+        assert(result.deltas.epsilon_transitions[name].size() == 1);
+    }
     // TODO: Test all deltas
     return EXIT_SUCCESS;
 }
 
-int test_kleene_construct() {
+int test_full_kleene_construct() {
     nfa a;
     initialize_nfa(a);
-    kleene_construct(a);
+    full_kleene_construct(a);
 
     assert(a.deltas.epsilon_transitions[a.start].size() == 2);
     assert(a.deltas.transitions[a.start].size() == 0);
@@ -745,9 +755,9 @@ int test_kleene_construct() {
 }
 
 int main() {
-    test_concat_construct();
-    test_union_construct();
-    test_kleene_construct();
+    test_full_concat_construct();
+    test_full_union_construct();
+    test_full_kleene_construct();
 }
 #else
 
