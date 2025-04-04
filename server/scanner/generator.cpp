@@ -218,6 +218,19 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
 /**
  * merge_categories_nfa - Given nfas for each synthactic category, build a
  * global nfa tha'll be able to recognize any of them.
+ *
+ *            (Result Start State)
+ *                    |
+ *                   ε|ε
+ *                    |
+ *              +-----+-------+---------------------------------+
+ *              |             |                                 |
+ *              v             v                                 v
+ *    (Start State of A)  (Start State of B)            (Start state of C)
+ *              |             |                                 |
+ *             ...           ...                               ...
+ *              |             |                                 |
+ * (A's {Accepting States}) (B's {Accepting States})  (C's {Accepting States})
  */
 static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa,
                                  nfa &result_nfa) {
@@ -231,6 +244,11 @@ static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa,
         key_nfa.start);
     result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
         op_nfa.start);
+    
+
+    result_nfa.accept.insert(int_nfa.accept.begin(), int_nfa.accept.end());
+    result_nfa.accept.insert(key_nfa.accept.begin(), key_nfa.accept.end());
+    result_nfa.accept.insert(op_nfa.accept.begin(), op_nfa.accept.end());
 }
 
 /**
@@ -630,10 +648,10 @@ static void generate_scanner_code(dfa &glob_dfa) {
  */
 int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
-    initialize_nfa(int_nfa, false);
-    initialize_nfa(key_nfa, false);
-    initialize_nfa(op_nfa, false);
-    initialize_nfa(endl_nfa, false);
+    initialize_nfa(int_nfa);
+    initialize_nfa(key_nfa);
+    initialize_nfa(op_nfa);
+    initialize_nfa(endl_nfa);
     initialize_nfa(glob_nfa, false);
 
     dfa glob_dfa;
