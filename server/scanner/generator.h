@@ -45,6 +45,8 @@ enum synthax_cat {
     integer = 2,
     identifier = 3,
     comment = 4,
+    op = 5,
+    endline = 6,
 };
 
 struct nfa {
@@ -64,3 +66,5 @@ struct dfa {
     unordered_map<string, state> states; // [state_uid -> state...]
     deltas_t deltas;                     // [state_uid -> deltas...]
 };
+
+string synthax_cat_to_string(synthax_cat category);

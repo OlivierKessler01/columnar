@@ -129,7 +129,7 @@ struct regex_node {
 /**
  * initialize_nfa - Allocates start and stop state for an nfa.
  */
-void initialize_nfa(nfa &n, bool add_accept_state = true) {
+void initialize_nfa(nfa &n, bool add_accept_state = true, synthax_cat accept_state_cat = keyword) {
     state start = state{uuid::generate_uuid_v4()};
     n.states[start.name] = start;
     n.start = start.name;
@@ -137,7 +137,7 @@ void initialize_nfa(nfa &n, bool add_accept_state = true) {
     if (add_accept_state) {
         state accept_state = state{uuid::generate_uuid_v4()};
         n.states[accept_state.name] = accept_state;
-        n.accept[accept_state.name] = keyword;
+        n.accept[accept_state.name] = accept_state_cat;
     }
 }
 
@@ -291,40 +291,41 @@ static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
  *               |
  *              ε|ε
  *               |
- *         +-----+----------+
- *         |                |
- *         v                |
- *  (Start State of A)      |
- *         |         ^      |
- *        ...        |      |
- *         |         |ε     |
- *         v         |      |
+ *         +-----+------------ +
+ *         |                   |
+ *         v                   |
+ *  (Start State of A)         |
+ *         |         ^         |
+ *        ...        |         |
+ *         |         |ε        |
+ *         v         |         |
  * ({Accepting States} of A)   |
- *         |                |
- *          \              /
- *          ε\            /
- *            v          v
- *        (New Accepting State)
+ *         |\                 /|
+ *         | \  ε            / |
+ *         |..\             /..|
+ *         v   v           v   v
+ *        ({New Accepting States)}
  */
 static void full_kleene_construct(nfa &a) {
     string old_start;
     unordered_map<string, synthax_cat> old_accept;
     old_start = a.start;
     old_accept = a.accept;
-
     state new_start = state{uuid::generate_uuid_v4()};
-    state new_accept = state{uuid::generate_uuid_v4()};
-
-    a.start = new_start.name;
-    a.accept.clear();
-    a.accept[new_accept.name] = keyword;
-    a.states[new_start.name] = new_start;
-    a.states[new_accept.name] = new_accept;
-
-    a.deltas.epsilon_transitions[new_start.name].push_back(new_accept.name);
     a.deltas.epsilon_transitions[new_start.name].push_back(old_start);
+    state new_accept;
+    a.start = new_start.name;
+    a.states[new_start.name] = new_start;
+    a.accept.clear();
 
-    for (auto &[old_acc, cat] : old_accept) {
+    for (auto &[old_acc, cat]: old_accept){
+        new_accept = state{uuid::generate_uuid_v4()};
+
+        a.accept[new_accept.name] = cat;
+        a.states[new_accept.name] = new_accept;
+
+        a.deltas.epsilon_transitions[new_start.name].push_back(new_accept.name);
+
         a.deltas.epsilon_transitions[old_acc].push_back(old_start);
         a.deltas.epsilon_transitions[old_acc].push_back(new_accept.name);
     }
@@ -645,10 +646,10 @@ static void generate_scanner_code(dfa &glob_dfa) {
  */
 int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
-    initialize_nfa(int_nfa);
-    initialize_nfa(key_nfa);
-    initialize_nfa(op_nfa);
-    initialize_nfa(endl_nfa);
+    initialize_nfa(int_nfa, true, integer);
+    initialize_nfa(key_nfa, true, keyword);
+    initialize_nfa(op_nfa, true, op);
+    initialize_nfa(endl_nfa, true, endline);
     initialize_nfa(glob_nfa, false);
 
     dfa glob_dfa;
