@@ -331,6 +331,14 @@ static void full_kleene_construct(nfa &a) {
     }
 }
 
+int literal_construct(nfa &n, string literal)
+{
+    std::cout << "TODO: iterate over the string, create new states from start and link to accept" << std::endl;
+    //n.deltas.transitions[n.start][node->value] = n.accept.begin()->first;
+    //
+    return 0;
+}
+
 /**
  * Constructs a non-deterministic automaton from a tree of operations
  * (kleene, concatenation, union)
@@ -347,20 +355,23 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
         return EXIT_FAILURE;
     }
     nfa nfa_left, nfa_right;
-    initialize_nfa(nfa_left);
-    initialize_nfa(nfa_right);
 
     if (node->variant == 2) {
+        initialize_nfa(nfa_left);
+        initialize_nfa(nfa_right);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
         full_concat_construct(nfa_left, nfa_right, n);
     } else if (node->variant == 1) {
+        initialize_nfa(nfa_left);
+        initialize_nfa(nfa_right);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
         full_union_construct(nfa_left, nfa_right, n);
     } else if (node->variant == 3) {
         full_kleene_construct(n);
     } else if (node->variant == 0) {
+        literal_construct(n, node->value);
     } else {
         cout << "Wrong regex node type" << endl;
         exit(EXIT_FAILURE);
@@ -368,6 +379,7 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
 
     return EXIT_SUCCESS;
 }
+
 
 /**
  * re_tokenize - Given a regexp, returns a stream of tokens representing
@@ -648,7 +660,7 @@ int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
     initialize_nfa(int_nfa, true, integer);
     initialize_nfa(key_nfa, true, keyword);
-    initialize_nfa(op_nfa, true, op);
+    //initialize_nfa(op_nfa, true, op);
     initialize_nfa(endl_nfa, true, endline);
     initialize_nfa(glob_nfa, false);
 
@@ -693,9 +705,12 @@ int construct_scanner() {
     thompson_construction(key_nfa, key_optree);
     cout << "Converting ENDLINE Optree to nfa" << endl;
     thompson_construction(endl_nfa, endl_optree);
-
+    
+    int_nfa.generate_dot("/tmp/int_nfa.dot");
+    key_nfa.generate_dot("/tmp/key_nfa.dot");
+    endl_nfa.generate_dot("/tmp/endl_nfa.dot");
     cout << "Merging INT, KEYWORD, ENDLING nfas into a global NFA" << endl;
-    std::vector src = {int_nfa, key_nfa, op_nfa};
+    std::vector src = {int_nfa, key_nfa, endl_nfa};
     merge_into_final_nfa(src, glob_nfa);
     cout << "Printing NFA graph into /tmp/nfa.dot for debugging." << endl;
     glob_nfa.generate_dot("/tmp/nfa.dot");

@@ -10,8 +10,10 @@ string synthax_cat_to_string(synthax_cat category) {
         return "integer";
     case identifier:
         return "identifier";
-    case comment:
-        return "comment";
+    case op:
+        return "operator";
+    case endline:
+        return "endline";
     default:
         return "unknown";
     }
