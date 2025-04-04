@@ -1,9 +1,11 @@
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <set>
 #include <sstream>
+#include <string>
 #include <sys/types.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -46,20 +48,19 @@ enum synthax_cat {
 };
 
 struct nfa {
+  public:
+    void generate_dot(const string &filename) const;
     string start;
-    unordered_map<string, synthax_cat> accept; // accepting states 
-    unordered_set<char> sigma;           // finite alphabet used by the nfa
-    unordered_map<string, state> states; // [state_uid -> state...]
+    unordered_map<string, synthax_cat> accept; // accepting states
+    unordered_set<char> sigma;                 // finite alphabet used by the nfa
+    unordered_map<string, state> states;       // [state_uid -> state...]
     deltas_t deltas;
 };
 
-
 struct dfa {
     string start;
-    unordered_map<string, synthax_cat> accept; // accepting states 
+    unordered_map<string, synthax_cat> accept; // accepting states
     unordered_set<char> sigma;           // finite alphabet used by the nfa
     unordered_map<string, state> states; // [state_uid -> state...]
-    deltas_t deltas; // [state_uid -> deltas...]
+    deltas_t deltas;                     // [state_uid -> deltas...]
 };
-
-

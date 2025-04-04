@@ -52,18 +52,21 @@ tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
 debug_generate_scanner: clean # Debug the scanner generator code
 	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
+		server/scanner/nfa.cpp \
 		-W -Wall -pedantic \
 	&& gdb ./scanner_ex
 
 generate_scanner: clean # Generate the scanner generator
 	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
+		server/scanner/nfa.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_ex
 
 test_scanner_generator: clean # Test the scanner generator
 	$(CC) $(CFLAGS) -g -DTEST -o scanner_generator_test  \
 		server/scanner/generator.cpp \
+		server/scanner/nfa.cpp \
 		-W -Wall -pedantic \
 	&& ./scanner_generator_test
 

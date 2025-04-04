@@ -161,15 +161,19 @@ void delta_func(std::unordered_set<state, state::hash_function> &q,
  */
 static void nfa_append(nfa &src, nfa &dest) {
     dest.states.insert(src.states.begin(), src.states.end());
-    dest.deltas.transitions.insert(src.deltas.transitions.begin(), src.deltas.transitions.end());
-    dest.deltas.epsilon_transitions.insert(src.deltas.epsilon_transitions.begin(), src.deltas.epsilon_transitions.end());
+    dest.deltas.transitions.insert(src.deltas.transitions.begin(),
+                                   src.deltas.transitions.end());
+    dest.deltas.epsilon_transitions.insert(
+        src.deltas.epsilon_transitions.begin(),
+        src.deltas.epsilon_transitions.end());
 }
 
 /**
  * add_delta_nfa - Use this function to add a non-epsilon transition to an nfa
  * to maintain a correct sigma set.
  */
-static void add_delta_nfa(nfa &nfa, string from_id, string to_id, char character) {
+static void add_delta_nfa(nfa &nfa, string from_id, string to_id,
+                          char character) {
     nfa.deltas.transitions[from_id][character] = to_id;
 }
 
@@ -216,14 +220,17 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
 }
 
 /**
- * merge_categories_nfa - Given nfas for each synthactic category, build a
+ * merge_into_final_nfa - Given nfas for each synthactic category, build a
  * global nfa tha'll be able to recognize any of them.
  *
- *            (Result Start State)
- *                    |
- *                   ε|ε
- *                    |
- *              +-----+-------+---------------------------------+
+ * Please pass a dest nfa that has no accept state.
+ *
+ * Example if |src| = 3
+ *                           (dest Start State)
+ *                                     |
+ *                                    ε|ε
+ *                                     |
+ *              +-------------+---------------------------------+
  *              |             |                                 |
  *              v             v                                 v
  *    (Start State of A)  (Start State of B)            (Start state of C)
@@ -232,23 +239,12 @@ static void full_union_construct(nfa &a, nfa &b, nfa &result) {
  *              |             |                                 |
  * (A's {Accepting States}) (B's {Accepting States})  (C's {Accepting States})
  */
-static void merge_categories_nfa(nfa &int_nfa, nfa &key_nfa, nfa &op_nfa,
-                                 nfa &result_nfa) {
-    nfa_append(int_nfa, result_nfa);
-    nfa_append(key_nfa, result_nfa);
-    nfa_append(op_nfa, result_nfa);
-
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
-        int_nfa.start);
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
-        key_nfa.start);
-    result_nfa.deltas.epsilon_transitions[result_nfa.start].push_back(
-        op_nfa.start);
-    
-
-    result_nfa.accept.insert(int_nfa.accept.begin(), int_nfa.accept.end());
-    result_nfa.accept.insert(key_nfa.accept.begin(), key_nfa.accept.end());
-    result_nfa.accept.insert(op_nfa.accept.begin(), op_nfa.accept.end());
+static void merge_into_final_nfa(std::vector<nfa> &src, nfa &dest) {
+    for (nfa &src_nfa : src) {
+        nfa_append(src_nfa, dest);
+        dest.deltas.epsilon_transitions[dest.start].push_back(src_nfa.start);
+        dest.accept.insert(src_nfa.accept.begin(), src_nfa.accept.end());
+    }
 }
 
 /**
@@ -580,6 +576,7 @@ static void minimize_dfa(dfa &dfa) {
     // TODO: Minimize the DFA
 }
 
+
 /**
  * generate_scanner_code() - Generate the scanner code as a file.
  */
@@ -696,8 +693,11 @@ int construct_scanner() {
     cout << "Converting ENDLINE Optree to nfa" << endl;
     thompson_construction(endl_nfa, endl_optree);
 
-    cout << "Merging INT, KEYWORD, ENDLING nfas to a global NFA" << endl;
-    merge_categories_nfa(int_nfa, key_nfa, op_nfa, glob_nfa);
+    cout << "Merging INT, KEYWORD, ENDLING nfas into a global NFA" << endl;
+    std::vector src = {int_nfa, key_nfa, op_nfa};
+    merge_into_final_nfa(src, glob_nfa);
+    cout << "Printing NFA graph into /tmp/nfa.dot for debugging." << endl;
+    glob_nfa.generate_dot("/tmp/nfa.dot");
 
     cout << "Converting Global nfa to dfa" << endl;
     subset_construction(glob_nfa, glob_dfa);
