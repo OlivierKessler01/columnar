@@ -365,24 +365,37 @@ int literal_construct(nfa &n, string literal)
         std::cerr << "The literal is empty" << std::endl;
         return EXIT_FAILURE;
     }
-    
-    //Treat the first charjk
-    initialize_nfa(result_nfa, n.accept.begin()->second);
-    result_nfa.deltas.transitions[result_nfa.start][literal[0]] = result_nfa.accept.begin()->first;
-    prev_char_nfa = result_nfa;
-    literal.erase(0, 1);
-    
-    //Do the rest
-    for(char &c: literal){
-        current_char_nfa = nfa{};
+
+    // Check if literal is a character class (e.g., "[a-z]" or "[abc]")
+    if (literal.front() == '[' && literal.back() == ']') {
+        string char_class = literal.substr(1, literal.size() - 2);  // Exclude brackets
         result_nfa = nfa{};
-        initialize_nfa(current_char_nfa, n.accept.begin()->second);
         initialize_nfa(result_nfa, n.accept.begin()->second);
-
-        current_char_nfa.deltas.transitions[current_char_nfa.start][c] = current_char_nfa.accept.begin()->first;
-
-        full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
+        //TODO : implement char class construct 
+        // for each char in char_class : 
+        //      create a nfa, add the nfa to nfa_vec
+        // result_nfa = full_union_construct(nfa_vec);
+        //
+        //char_class_construct(result_nfa, char_class);
+    } else {
+        //Treat the first char
+        initialize_nfa(result_nfa, n.accept.begin()->second);
+        result_nfa.deltas.transitions[result_nfa.start][literal[0]] = result_nfa.accept.begin()->first;
         prev_char_nfa = result_nfa;
+        literal.erase(0, 1);
+        
+        //Do the rest
+        for(char &c: literal){
+            current_char_nfa = nfa{};
+            result_nfa = nfa{};
+            initialize_nfa(current_char_nfa, n.accept.begin()->second);
+            initialize_nfa(result_nfa, n.accept.begin()->second);
+
+            current_char_nfa.deltas.transitions[current_char_nfa.start][c] = current_char_nfa.accept.begin()->first;
+
+            full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
+            prev_char_nfa = result_nfa;
+        }
     }
      
     n = result_nfa;
