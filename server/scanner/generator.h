@@ -47,6 +47,7 @@ enum synthax_cat {
     comment = 4,
     op = 5,
     endline = 6,
+    unknown = 7
 };
 
 struct nfa {
@@ -56,7 +57,6 @@ struct nfa {
     unordered_map<string, synthax_cat> accept; // accepting states
     unordered_set<char> sigma;                 // finite alphabet used by the nfa
     unordered_map<string, state> states;       // [state_uid -> state...]
-    bool initialized;
     deltas_t deltas;
 };
 

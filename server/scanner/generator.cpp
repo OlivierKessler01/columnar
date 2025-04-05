@@ -129,17 +129,14 @@ struct regex_node {
 /**
  * initialize_nfa - Allocates start and stop state for an nfa.
  */
-void initialize_nfa(nfa &n, bool add_accept_state = true, synthax_cat accept_state_cat = keyword) {
+void initialize_nfa(nfa &n, synthax_cat accept_state_cat = unknown) {
     state start = state{uuid::generate_uuid_v4()};
     n.states[start.name] = start;
     n.start = start.name;
-    n.initialized = true;
 
-    if (add_accept_state) {
-        state accept_state = state{uuid::generate_uuid_v4()};
-        n.states[accept_state.name] = accept_state;
-        n.accept[accept_state.name] = accept_state_cat;
-    }
+    state accept_state = state{uuid::generate_uuid_v4()};
+    n.states[accept_state.name] = accept_state;
+    n.accept[accept_state.name] = accept_state_cat;
 }
 
 /**
@@ -333,30 +330,62 @@ static void full_kleene_construct(nfa &a) {
 }
 
 /**
- * literal_construct - Constructs a NFA that can recognize a string/literal.
+ * literal_construct - Constructs a NFA that can recognize a string/literal 
+ * using individual nfa for each char and concatenating them.
+ * 
+ * Example : literal == "oli"
  *
+ *        (New Start State)
+ *               |
+ *               | "o"
+ *               |
+ *        (Second State)
+ *               |
+ *               | ε 
+ *               |
+ *        (Third State)
+ *               |
+ *               | "l"
+ *               |
+ *        (Fourth State)
+ *               |
+ *               | ε 
+ *               |
+ *        (Fifth State)
+ *               |
+ *               | "i"
+ *               |
+ *        (Accept state)
  *
  */
 int literal_construct(nfa &n, string literal)
 {
     nfa current_char_nfa, prev_char_nfa, result_nfa;
-
+    if (literal.empty()) {
+        std::cerr << "The literal is empty" << std::endl;
+        return EXIT_FAILURE;
+    }
+    
+    //Treat the first charjk
+    initialize_nfa(result_nfa, n.accept.begin()->second);
+    result_nfa.deltas.transitions[result_nfa.start][literal[0]] = result_nfa.accept.begin()->first;
+    prev_char_nfa = result_nfa;
+    literal.erase(0, 1);
+    
+    //Do the rest
     for(char &c: literal){
         current_char_nfa = nfa{};
         result_nfa = nfa{};
-        initialize_nfa(current_char_nfa);
-        initialize_nfa(result_nfa, false);
+        initialize_nfa(current_char_nfa, n.accept.begin()->second);
+        initialize_nfa(result_nfa, n.accept.begin()->second);
 
         current_char_nfa.deltas.transitions[current_char_nfa.start][c] = current_char_nfa.accept.begin()->first;
 
-        if (prev_char_nfa.initialized) {
-            full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
-            prev_char_nfa = result_nfa;
-        } else {
-            prev_char_nfa = current_char_nfa;
-        }
+        full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
+        prev_char_nfa = result_nfa;
     }
-
+     
+    n = result_nfa;
     return 0;
 }
 
@@ -378,14 +407,14 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
     nfa nfa_left, nfa_right;
 
     if (node->variant == 2) {
-        initialize_nfa(nfa_left);
-        initialize_nfa(nfa_right);
+        initialize_nfa(nfa_left, n.accept.begin()->second);
+        initialize_nfa(nfa_right, n.accept.begin()->second);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
         full_concat_construct(nfa_left, nfa_right, n);
     } else if (node->variant == 1) {
-        initialize_nfa(nfa_left);
-        initialize_nfa(nfa_right);
+        initialize_nfa(nfa_left, n.accept.begin()->second);
+        initialize_nfa(nfa_right, n.accept.begin()->second);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
         full_union_construct(nfa_left, nfa_right, n);
@@ -679,11 +708,12 @@ static void generate_scanner_code(dfa &glob_dfa) {
  */
 int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
-    initialize_nfa(int_nfa, true, integer);
-    initialize_nfa(key_nfa, true, keyword);
-    //initialize_nfa(op_nfa, true, op);
-    initialize_nfa(endl_nfa, true, endline);
-    initialize_nfa(glob_nfa, false);
+    initialize_nfa(int_nfa, integer);
+    initialize_nfa(key_nfa, keyword);
+    //initialize_nfa(op_nfa, op);
+    initialize_nfa(endl_nfa, endline);
+    initialize_nfa(glob_nfa, unknown);
+    glob_nfa.accept.clear();
 
     dfa glob_dfa;
     char *code = (char *)malloc(1);
@@ -753,9 +783,9 @@ int construct_scanner() {
 
 int test_full_concat_construct() {
     nfa a, b, result;
-    initialize_nfa(a);
-    initialize_nfa(b);
-    initialize_nfa(result);
+    initialize_nfa(a, keyword);
+    initialize_nfa(b, keyword);
+    initialize_nfa(result, keyword);
 
     auto any_a_acc = a.accept.begin();
     auto any_b_acc = b.accept.begin();
@@ -776,9 +806,9 @@ int test_full_concat_construct() {
 
 int test_full_union_construct() {
     nfa a, b, result;
-    initialize_nfa(a);
-    initialize_nfa(b);
-    initialize_nfa(result);
+    initialize_nfa(a, keyword);
+    initialize_nfa(b, keyword);
+    initialize_nfa(result, keyword);
 
     auto any_a_acc = a.accept.begin();
     auto any_b_acc = b.accept.begin();
@@ -801,20 +831,19 @@ int test_full_union_construct() {
 
 int test_literal_construct() {
     nfa a;
-    initialize_nfa(a, true, integer);
+    initialize_nfa(a, integer);
     std::string literal = "oli";
     literal_construct(a, literal);
     
     assert(a.deltas.transitions[a.start].size() == 1);
     assert(a.deltas.transitions[a.start].begin()->first == 'o');
     assert(a.accept.begin()->second == integer);
-    assert(1==2);
     return EXIT_SUCCESS;
 }
 
 int test_full_kleene_construct() {
     nfa a;
-    initialize_nfa(a);
+    initialize_nfa(a, keyword);
     full_kleene_construct(a);
 
     assert(a.deltas.epsilon_transitions[a.start].size() == 2);

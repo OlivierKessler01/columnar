@@ -42,16 +42,28 @@ void nfa::generate_dot(const string &filename) const {
             "\" ];\n";
     file << "    start -> \"" << start << "\";\n";
 
+    std::string new_to, new_from;
+
     // Normal transitions
     for (const auto &[from, edges] : deltas.transitions) {
+        if (accept.find(from) != accept.end()) {
+            new_from = synthax_cat_to_string(accept.at(from));
+        } else {
+            new_from = from;
+        }
+
         for (const auto &[symbol, to] : edges) {
-            file << "    \"" << from << "\" -> \"" << to << "\" [label=\""
+            if (accept.find(to) != accept.end()) {
+                new_to = synthax_cat_to_string(accept.at(to));
+            } else {
+                new_to = to;
+            }
+            file << "    \"" << new_from << "\" -> \"" << new_to << "\" [label=\""
                  << symbol << "\"];\n";
         }
     }
 
     // Epsilon transitions
-    std::string new_to, new_from;
 
     for (const auto &[from, to_list] : deltas.epsilon_transitions) {
         //Print accept synthax cat in the graph instead of their uuid state names
