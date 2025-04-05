@@ -6,12 +6,13 @@
  *	Author: Olivier Kessler <olivier.kessler@protonmail.com>
  */
 
+#include <ios>
 #include <iostream>
 #include <unordered_set>
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
-#define INTEGER_REGEXP "(0|[1...9][0...9]*)"
-#define IDENTIFIER_REGEXP "([a..z]([a..z]|[A...Z]|[0...9])*)"
+#define INTEGER_REGEXP "(0|[1-9][0-9]*)"
+#define IDENTIFIER_REGEXP "([a-Z]([a-Z]|[0-9])*)"
 #define OPERATOR_REGEXP "(\\*|\\+|\\-)"
 #define END_LINE_REGEXP "(;)"
 #include "generator.h"
@@ -199,21 +200,16 @@ static void add_delta_nfa(nfa &nfa, string from_id, string to_id,
  *                 v     v
  *           (New Accepting State)
  */
-static void full_union_construct(nfa &a, nfa &b, nfa &result) {
+static void full_union_construct(vector<nfa> &src, nfa &result) {
     // Copy state and transitions from a and b to result
-    nfa_append(a, result);
-    nfa_append(b, result);
+    for(auto &n: src) {
+        nfa_append(n, result);
+        result.deltas.epsilon_transitions[result.start].push_back(n.start);
 
-    result.deltas.epsilon_transitions[result.start].push_back(a.start);
-    result.deltas.epsilon_transitions[result.start].push_back(b.start);
-
-    for (auto &[acc, cat] : a.accept) {
-        for (auto &[res_acc, res_cat] : result.accept)
-            result.deltas.epsilon_transitions[acc].push_back(res_acc);
-    }
-    for (auto &[acc, cat] : b.accept) {
-        for (auto &[res_acc, res_cat] : result.accept)
-            result.deltas.epsilon_transitions[acc].push_back(res_acc);
+        for (auto &[acc, cat] : n.accept) {
+            for (auto &[res_acc, res_cat] : result.accept)
+                result.deltas.epsilon_transitions[acc].push_back(res_acc);
+        }
     }
 }
 
@@ -264,16 +260,15 @@ static void merge_into_final_nfa(std::vector<nfa> &src, nfa &dest) {
  *         |
  *   ({Accepting States} of B)
  */
-static void full_concat_construct(nfa &a, nfa &b, nfa &result) {
+static void full_concat_construct(vector<nfa> &src, nfa &result) {
     // Copy state and transitions from a and b to result
-    nfa_append(a, result);
-    nfa_append(b, result);
-    result.start = a.start;
-    result.accept = b.accept;
-
-    // Add the epsilon transitions
-    for (auto &[acc, cat] : a.accept) {
-        result.deltas.epsilon_transitions[acc].push_back(b.start);
+    result.start = src.begin()->start;
+    for(nfa &n: src) {
+        nfa_append(n, result);
+        for(auto &[acc,cat]: result.accept) {
+            result.deltas.epsilon_transitions[acc].push_back(n.start);
+        }
+        result.accept = n.accept;
     }
 }
 
@@ -329,6 +324,45 @@ static void full_kleene_construct(nfa &a) {
     }
 }
 
+nfa create_single_char_nfa(char ch, synthax_cat cat) {
+    nfa result;
+    initialize_nfa(result, cat);
+    result.deltas.transitions[result.start][ch] = result.accept.begin()->first;
+    return result;
+}
+
+/**
+ * char_class_construct - Given a character class, build the NFA to recognize 
+ * it.
+ *
+ * class is 'a-z' format or 'abcds....' format
+ *
+ */
+int char_class_construct(nfa &result, string c)
+{
+    if (c.size() == 3 && c.at(1) == '-') {
+        if(c == "a-z") {
+            c = "abcdefghijklmnopqrstuvwxyz";
+        } else if(c == "A-Z") {
+            c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        } else if(c == "a-Z") {
+            c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        } else if(c == "0-9") {
+            c = "0123456789";
+        }
+    } 
+    
+    vector<nfa> src;
+    for(char &character: c) {
+        src.push_back(
+            create_single_char_nfa(character, result.accept.begin()->second)
+        );
+    }
+
+    full_union_construct(src, result);
+    return 0;
+}
+
 /**
  * literal_construct - Constructs a NFA that can recognize a string/literal 
  * using individual nfa for each char and concatenating them.
@@ -358,48 +392,31 @@ static void full_kleene_construct(nfa &a) {
  *        (Accept state)
  *
  */
-int literal_construct(nfa &n, string literal)
+nfa literal_construct(string literal, synthax_cat cat)
 {
     nfa current_char_nfa, prev_char_nfa, result_nfa;
+    vector<nfa> src;
+
     if (literal.empty()) {
         std::cerr << "The literal is empty" << std::endl;
-        return EXIT_FAILURE;
+        throw std::invalid_argument("The literal is empty");
     }
+
+    initialize_nfa(result_nfa, cat);
 
     // Check if literal is a character class (e.g., "[a-z]" or "[abc]")
     if (literal.front() == '[' && literal.back() == ']') {
         string char_class = literal.substr(1, literal.size() - 2);  // Exclude brackets
-        result_nfa = nfa{};
-        initialize_nfa(result_nfa, n.accept.begin()->second);
-        //TODO : implement char class construct 
-        // for each char in char_class : 
-        //      create a nfa, add the nfa to nfa_vec
-        // result_nfa = full_union_construct(nfa_vec);
-        //
-        //char_class_construct(result_nfa, char_class);
+        char_class_construct(result_nfa, char_class);
     } else {
-        //Treat the first char
-        initialize_nfa(result_nfa, n.accept.begin()->second);
-        result_nfa.deltas.transitions[result_nfa.start][literal[0]] = result_nfa.accept.begin()->first;
-        prev_char_nfa = result_nfa;
-        literal.erase(0, 1);
-        
         //Do the rest
         for(char &c: literal){
-            current_char_nfa = nfa{};
-            result_nfa = nfa{};
-            initialize_nfa(current_char_nfa, n.accept.begin()->second);
-            initialize_nfa(result_nfa, n.accept.begin()->second);
-
-            current_char_nfa.deltas.transitions[current_char_nfa.start][c] = current_char_nfa.accept.begin()->first;
-
-            full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
-            prev_char_nfa = result_nfa;
+            src.push_back(create_single_char_nfa(c, cat));
         }
+        full_concat_construct(src, result_nfa);
     }
      
-    n = result_nfa;
-    return 0;
+    return result_nfa;
 }
 
 /**
@@ -418,23 +435,28 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
         return EXIT_FAILURE;
     }
     nfa nfa_left, nfa_right;
+    vector<nfa> src;
 
     if (node->variant == 2) {
         initialize_nfa(nfa_left, n.accept.begin()->second);
         initialize_nfa(nfa_right, n.accept.begin()->second);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
-        full_concat_construct(nfa_left, nfa_right, n);
+        src.push_back(nfa_left);
+        src.push_back(nfa_right);
+        full_concat_construct(src, n);
     } else if (node->variant == 1) {
         initialize_nfa(nfa_left, n.accept.begin()->second);
         initialize_nfa(nfa_right, n.accept.begin()->second);
         thompson_construction(nfa_left, node->left);
         thompson_construction(nfa_right, node->right);
-        full_union_construct(nfa_left, nfa_right, n);
+        src.push_back(nfa_left);
+        src.push_back(nfa_right);
+        full_union_construct(src, n);
     } else if (node->variant == 3) {
         full_kleene_construct(n);
     } else if (node->variant == 0) {
-        literal_construct(n, node->value);
+        n = literal_construct(node->value, n.accept.begin()->second);
     } else {
         cout << "Wrong regex node type" << endl;
         exit(EXIT_FAILURE);
@@ -796,6 +818,7 @@ int construct_scanner() {
 
 int test_full_concat_construct() {
     nfa a, b, result;
+    vector<nfa> src;
     initialize_nfa(a, keyword);
     initialize_nfa(b, keyword);
     initialize_nfa(result, keyword);
@@ -804,8 +827,10 @@ int test_full_concat_construct() {
     auto any_b_acc = b.accept.begin();
     add_delta_nfa(a, a.start, any_a_acc->first, 'c');
     add_delta_nfa(b, b.start, any_b_acc->first, 'd');
+    src.push_back(a);
+    src.push_back(b);
 
-    full_concat_construct(a, b, result);
+    full_concat_construct(src, result);
 
     assert(result.accept == b.accept);
     assert(result.start == a.start);
@@ -819,6 +844,7 @@ int test_full_concat_construct() {
 
 int test_full_union_construct() {
     nfa a, b, result;
+    vector<nfa> src;
     initialize_nfa(a, keyword);
     initialize_nfa(b, keyword);
     initialize_nfa(result, keyword);
@@ -827,8 +853,11 @@ int test_full_union_construct() {
     auto any_b_acc = b.accept.begin();
     add_delta_nfa(a, a.start, any_a_acc->first, 'c');
     add_delta_nfa(b, b.start, any_b_acc->first, 'd');
+    
+    src.push_back(a);
+    src.push_back(b);
 
-    full_union_construct(a, b, result);
+    full_union_construct(src, result);
 
     assert(result.deltas.epsilon_transitions[result.start].size() == 2);
 
@@ -844,9 +873,8 @@ int test_full_union_construct() {
 
 int test_literal_construct() {
     nfa a;
-    initialize_nfa(a, integer);
     std::string literal = "oli";
-    literal_construct(a, literal);
+    a = literal_construct(literal, integer);
     
     assert(a.deltas.transitions[a.start].size() == 1);
     assert(a.deltas.transitions[a.start].begin()->first == 'o');
