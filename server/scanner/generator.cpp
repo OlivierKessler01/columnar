@@ -133,6 +133,7 @@ void initialize_nfa(nfa &n, bool add_accept_state = true, synthax_cat accept_sta
     state start = state{uuid::generate_uuid_v4()};
     n.states[start.name] = start;
     n.start = start.name;
+    n.initialized = true;
 
     if (add_accept_state) {
         state accept_state = state{uuid::generate_uuid_v4()};
@@ -331,11 +332,31 @@ static void full_kleene_construct(nfa &a) {
     }
 }
 
+/**
+ * literal_construct - Constructs a NFA that can recognize a string/literal.
+ *
+ *
+ */
 int literal_construct(nfa &n, string literal)
 {
-    std::cout << "TODO: iterate over the string, create new states from start and link to accept" << std::endl;
-    //n.deltas.transitions[n.start][node->value] = n.accept.begin()->first;
-    //
+    nfa current_char_nfa, prev_char_nfa, result_nfa;
+
+    for(char &c: literal){
+        current_char_nfa = nfa{};
+        result_nfa = nfa{};
+        initialize_nfa(current_char_nfa);
+        initialize_nfa(result_nfa, false);
+
+        current_char_nfa.deltas.transitions[current_char_nfa.start][c] = current_char_nfa.accept.begin()->first;
+
+        if (prev_char_nfa.initialized) {
+            full_concat_construct(prev_char_nfa, current_char_nfa, result_nfa);
+            prev_char_nfa = result_nfa;
+        } else {
+            prev_char_nfa = current_char_nfa;
+        }
+    }
+
     return 0;
 }
 
@@ -778,6 +799,19 @@ int test_full_union_construct() {
     return EXIT_SUCCESS;
 }
 
+int test_literal_construct() {
+    nfa a;
+    initialize_nfa(a, true, integer);
+    std::string literal = "oli";
+    literal_construct(a, literal);
+    
+    assert(a.deltas.transitions[a.start].size() == 1);
+    assert(a.deltas.transitions[a.start].begin()->first == 'o');
+    assert(a.accept.begin()->second == integer);
+    assert(1==2);
+    return EXIT_SUCCESS;
+}
+
 int test_full_kleene_construct() {
     nfa a;
     initialize_nfa(a);
@@ -792,6 +826,7 @@ int main() {
     test_full_concat_construct();
     test_full_union_construct();
     test_full_kleene_construct();
+    test_literal_construct();
 }
 #else
 
