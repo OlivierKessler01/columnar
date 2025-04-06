@@ -263,6 +263,9 @@ static void merge_into_final_nfa(std::vector<nfa> &src, nfa &dest) {
 static void full_concat_construct(vector<nfa> &src, nfa &result) {
     // Copy state and transitions from a and b to result
     result.start = src.begin()->start;
+    result.states.clear();
+    result.accept.clear();
+
     for(nfa &n: src) {
         nfa_append(n, result);
         for(auto &[acc,cat]: result.accept) {
