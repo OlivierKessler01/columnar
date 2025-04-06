@@ -352,6 +352,8 @@ int char_class_construct(nfa &result, string c)
             c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         } else if(c == "0-9") {
             c = "0123456789";
+        } else if(c == "1-9") {
+            c = "123456789";
         }
     } 
     
