@@ -8,6 +8,7 @@
 
 #include <ios>
 #include <iostream>
+#include <unordered_map>
 #include <unordered_set>
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
@@ -27,60 +28,59 @@
 #include <stdlib.h>
 #include <string.h>
 
-using std::cout, std::endl;
+using std::cout, std::endl, std::vector, std::unordered_map, std::unordered_set;
 
 namespace uuid {
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> dis(0, 15);
-static std::uniform_int_distribution<> dis2(8, 11);
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, 15);
+    static std::uniform_int_distribution<> dis2(8, 11);
 
-/**
- * Generates UUIDs with 32 bits of randomness
- * Number of possible combinations : approx 4E9
- * Should be enough for the number of states we use
- */
-std::string generate_uuid_v4() {
-    std::stringstream ss;
-    int i;
-    ss << std::hex;
-    for (i = 0; i < 8; i++) {
-        ss << dis(gen);
+    /**
+     * Generates UUIDs with 32 bits of randomness
+     * Number of possible combinations : approx 4E9
+     * Should be enough for the number of states we use
+     */
+    string generate_uuid_v4() {
+        stringstream ss;
+        int i;
+        ss << std::hex;
+        for (i = 0; i < 8; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        for (i = 0; i < 4; i++) {
+            ss << dis(gen);
+        }
+        ss << "-4";
+        for (i = 0; i < 3; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        ss << dis2(gen);
+        for (i = 0; i < 3; i++) {
+            ss << dis(gen);
+        }
+        ss << "-";
+        for (i = 0; i < 12; i++) {
+            ss << dis(gen);
+        };
+        return ss.str();
     }
-    ss << "-";
-    for (i = 0; i < 4; i++) {
-        ss << dis(gen);
-    }
-    ss << "-4";
-    for (i = 0; i < 3; i++) {
-        ss << dis(gen);
-    }
-    ss << "-";
-    ss << dis2(gen);
-    for (i = 0; i < 3; i++) {
-        ss << dis(gen);
-    }
-    ss << "-";
-    for (i = 0; i < 12; i++) {
-        ss << dis(gen);
-    };
-    return ss.str();
 }
-} // namespace uuid
 
-// Base struct for a regex node
 struct regex_node {
     int variant; // 0 for literal, 1 for union, 2 for concat, 3 for kleene
     std::shared_ptr<regex_node> left;
     std::shared_ptr<regex_node> right;
-    std::string value;
+    string value;
 
     regex_node(int t, std::shared_ptr<regex_node> l = nullptr,
-               std::shared_ptr<regex_node> r = nullptr, std::string v = "")
+               std::shared_ptr<regex_node> r = nullptr, string v = "")
         : variant(t), left(l), right(r), value(v) {}
 
     void print(int indent = 0) {
-        std::string padding(indent, ' '); // Indentation for tree structure
+        string padding(indent, ' '); // Indentation for tree structure
         if (variant == 0) {
             std::cout << padding << "📄 Literal: " << value << "\n";
         } else if (variant == 1) {
@@ -144,15 +144,15 @@ void initialize_nfa(nfa &n, synthax_cat accept_state_cat = unknown) {
  * e_closure - Takes a set of states, returns a set of states reacheable via
  * only epsilon transitions/closures.
  */
-void e_closure(std::unordered_set<state, state::hash_function> &q,
-               std::unordered_set<state, state::hash_function> &result) {}
+void e_closure(unordered_set<state, state::hash_function> &q,
+               unordered_set<state, state::hash_function> &result) {}
 
 /**
  * delta - Applies the transition function to each element of
  * q, given a char c.
  */
-void delta_func(std::unordered_set<state, state::hash_function> &q,
-                std::unordered_set<state, state::hash_function> &result,
+void delta_func(unordered_set<state, state::hash_function> &q,
+                unordered_set<state, state::hash_function> &result,
                 char c) {}
 
 /**
@@ -160,11 +160,14 @@ void delta_func(std::unordered_set<state, state::hash_function> &q,
  */
 static void nfa_append(nfa &src, nfa &dest) {
     dest.states.insert(src.states.begin(), src.states.end());
-    dest.deltas.transitions.insert(src.deltas.transitions.begin(),
-                                   src.deltas.transitions.end());
+    dest.deltas.transitions.insert(
+        src.deltas.transitions.begin(),
+        src.deltas.transitions.end()
+    );
     dest.deltas.epsilon_transitions.insert(
         src.deltas.epsilon_transitions.begin(),
-        src.deltas.epsilon_transitions.end());
+        src.deltas.epsilon_transitions.end()
+    );
 }
 
 /**
@@ -233,7 +236,7 @@ static void full_union_construct(vector<nfa> &src, nfa &result) {
  *              |             |                                 |
  * (A's {Accepting States}) (B's {Accepting States})  (C's {Accepting States})
  */
-static void merge_into_final_nfa(std::vector<nfa> &src, nfa &dest) {
+static void merge_into_final_nfa(vector<nfa> &src, nfa &dest) {
     for (nfa &src_nfa : src) {
         nfa_append(src_nfa, dest);
         dest.deltas.epsilon_transitions[dest.start].push_back(src_nfa.start);
@@ -477,15 +480,15 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
  * insert_explicit_concat_tokens - Given regexp tokens, insert explicit "."
  * concatenation operators so we can postfix it.
  */
-std::vector<std::string> insert_explicit_concat_tokens(const std::vector<std::string>& tokens) {
-    std::vector<std::string> result;
+vector<string> insert_explicit_concat_tokens(const vector<string>& tokens) {
+    vector<string> result;
 
     for (size_t i = 0; i < tokens.size(); ++i) {
         result.push_back(tokens[i]);
 
         if (i + 1 < tokens.size()) {
-            std::string a = tokens[i];
-            std::string b = tokens[i + 1];
+            string a = tokens[i];
+            string b = tokens[i + 1];
 
             bool aLiteral = (isalnum(a[0]) || a[0] == '[' || a == ")");
             bool bLiteral = (isalnum(b[0]) || b[0] == '[' || b == "(");
@@ -508,9 +511,9 @@ std::vector<std::string> insert_explicit_concat_tokens(const std::vector<std::st
  * re_tokenize - Given a regexp, returns a stream of tokens representing
  * all the elements of the regexp.
  */
-static std::vector<std::string> re_tokenize(const std::string &regex) {
-    std::vector<std::string> tokens;
-    std::string token;
+static vector<string> re_tokenize(const string &regex) {
+    vector<string> tokens;
+    string token;
     bool inClass = false;
 
     for (size_t i = 0; i < regex.size(); ++i) {
@@ -533,7 +536,7 @@ static std::vector<std::string> re_tokenize(const std::string &regex) {
                 token.clear();
             }
             if (c == '(' || c == ')' || c == '|' || c == '*' || c == '\xB7') {
-                tokens.push_back(std::string(1, c));
+                tokens.push_back(string(1, c));
             } else if (isalnum(c) || c == ';') {
                 token += c;
             }
@@ -549,16 +552,15 @@ static std::vector<std::string> re_tokenize(const std::string &regex) {
  * re_to_postfix - Given a stream of tokens reprensenting a regexp in the infix
  * format, convert it to postfix using the shunting yard algorithm.
  */
-static std::vector<std::string>
-re_to_postfix(const std::vector<std::string> &tokens) {
-    std::vector<std::string> output;
-    std::stack<std::string> operators;
-    std::unordered_map<std::string, int> precedence = {
-        {"*", 3}, {"·", 2}, {"|", 1}};
-    std::unordered_map<std::string, bool> rightAssociative = {
-        {"*", true}, {"·", false}, {"|", false}};
+static vector<string> re_to_postfix(const vector<string> &tokens) {
+    vector<string> output;
+    std::stack<string> operators;
+    unordered_map<string, int> precedence = { {"*", 3}, {"·", 2}, {"|", 1}};
+    unordered_map<string, bool> rightAssociative = {
+        {"*", true}, {"·", false}, {"|", false}
+    };
 
-    auto isOperator = [&](const std::string &token) {
+    auto isOperator = [&](const string &token) {
         return precedence.find(token) != precedence.end();
     };
 
@@ -599,7 +601,7 @@ re_to_postfix(const std::vector<std::string> &tokens) {
  * postfix format.
  */
 static std::shared_ptr<regex_node>
-build_thompson_tree(const std::vector<std::string> &postfixTokens) {
+build_thompson_tree(const vector<string> &postfixTokens) {
     std::stack<std::shared_ptr<regex_node>> nodeStack;
 
     for (const auto &token : postfixTokens) {
@@ -607,7 +609,8 @@ build_thompson_tree(const std::vector<std::string> &postfixTokens) {
             auto operand = nodeStack.top();
             nodeStack.pop();
             nodeStack.push(
-                std::make_shared<regex_node>(3, operand, nullptr, ""));
+                std::make_shared<regex_node>(3, operand, nullptr, "")
+            );
         } else if (token == "|") {
             auto right = nodeStack.top();
             nodeStack.pop();
@@ -634,8 +637,8 @@ build_thompson_tree(const std::vector<std::string> &postfixTokens) {
 // Hash set of states
 struct state_set_hash {
     size_t
-    operator()(const std::unordered_set<state, state::hash_function> &s) const {
-        std::string result;
+    operator()(const unordered_set<state, state::hash_function> &s) const {
+        string result;
         for (const auto &state : s) {
             result += state.name;
         }
@@ -647,8 +650,8 @@ struct state_set_hash {
 // Compare two set of states
 struct state_set_pred {
     bool operator()(
-        const std::unordered_set<state, state::hash_function> &s1,
-        const std::unordered_set<state, state::hash_function> &s2) const {
+        const unordered_set<state, state::hash_function> &s1,
+        const unordered_set<state, state::hash_function> &s2) const {
         return s1 == s2;
     }
 };
@@ -658,26 +661,26 @@ struct state_set_pred {
  * automaton.
  */
 static void subset_construction(nfa &nfa, dfa &dfa) {
-    std::unordered_set<state, state::hash_function> q0, q, n0_set, t, result;
+    vector<state> current;
+    unordered_set<state, state::hash_function> q0, q, n0_set, t, result;
+    unordered_set<
+        unordered_set<state, state::hash_function>,
+        state_set_hash, state_set_pred> worklist, big_q;
 
-    std::unordered_set<std::unordered_set<state, state::hash_function>,
-                       state_set_hash, state_set_pred>
-        worklist, big_q;
-
-    std::unordered_map<
-        std::unordered_set<state, state::hash_function>,
-        std::unordered_map<char,
-                           std::unordered_set<state, state::hash_function>>,
-        state_set_hash, state_set_pred>
-        big_t;
+    unordered_map<
+        unordered_set<state, state::hash_function>,
+        unordered_map<
+            char,
+            unordered_set<state, state::hash_function>
+        >,
+        state_set_hash,
+        state_set_pred
+    > big_t;
 
     n0_set.insert(nfa.states[nfa.start]);
     e_closure(n0_set, q0);
-
     big_q.insert(q0);
     worklist.insert(q0);
-
-    std::vector<state> current;
 
     while (!worklist.empty()) {
         q.clear();
@@ -721,7 +724,7 @@ static void generate_scanner_code(dfa &glob_dfa) {
         fopen("server/scanner/scanner.cpp", "w"); // Open file in write mode
 
     if (fp != NULL) {
-        std::string content =
+        string content =
             "#include \"scanner.h\"\n"
             "#include <string>\n\n"
             "/**\n"
@@ -832,7 +835,7 @@ int construct_scanner() {
     key_nfa.generate_dot("/tmp/key_nfa.dot");
     endl_nfa.generate_dot("/tmp/endl_nfa.dot");
     cout << "Merging INT, KEYWORD, ENDLING nfas into a global NFA" << endl;
-    std::vector src = {int_nfa, key_nfa, endl_nfa};
+    vector src = {int_nfa, key_nfa, endl_nfa};
     merge_into_final_nfa(src, glob_nfa);
     cout << "Printing NFA graph into /tmp/nfa.dot for debugging." << endl;
     glob_nfa.generate_dot("/tmp/nfa.dot");
@@ -909,7 +912,7 @@ int test_full_union_construct() {
 
 int test_literal_construct() {
     nfa a;
-    std::string literal = "oli";
+    string literal = "oli";
     a = literal_construct(literal, integer);
     
     assert(a.deltas.transitions[a.start].size() == 1);
