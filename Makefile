@@ -50,10 +50,10 @@ run-dev: server client # Build client and server, then run them
 tests: test_heap test_heap_sort test_scanner_generator # Run the test suite
 
 debug_generate_scanner: clean # Debug the scanner generator code
-	rm /tmp/endl_nfa.dot
-	rm /tmp/int_nfa.dot
-	rm /tmp/key_nfa.dot
-	rm /tmp/nfa.dot
+	rm /tmp/endl_nfa.dot | true 
+	rm /tmp/int_nfa.dot | true
+	rm /tmp/key_nfa.dot | true
+	rm /tmp/nfa.dot | true
 	$(CC) $(CFLAGS) -g  -o scanner_ex  \
 		server/scanner/generator.cpp \
 		server/scanner/nfa.cpp \

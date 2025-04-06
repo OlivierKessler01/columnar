@@ -11,7 +11,7 @@
 #include <unordered_set>
 
 #define KEYWORD_REGEXP "((select)|(from)|(where))"
-#define INTEGER_REGEXP "(0|[1-9][0-9]*)"
+#define INTEGER_REGEXP "((0)|([1-9]([0-9])*))"
 #define IDENTIFIER_REGEXP "([a-Z]([a-Z]|[0-9])*)"
 #define OPERATOR_REGEXP "(\\*|\\+|\\-)"
 #define END_LINE_REGEXP "(;)"
@@ -459,6 +459,9 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
         src.push_back(nfa_right);
         full_union_construct(src, n);
     } else if (node->variant == 3) {
+        initialize_nfa(nfa_left, n.accept.begin()->second);
+        thompson_construction(nfa_left, node->left);
+        n = nfa_left;
         full_kleene_construct(n);
     } else if (node->variant == 0) {
         n = literal_construct(node->value, n.accept.begin()->second);
@@ -470,6 +473,36 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
     return EXIT_SUCCESS;
 }
 
+/**
+ * insert_explicit_concat_tokens - Given regexp tokens, insert explicit "."
+ * concatenation operators so we can postfix it.
+ */
+std::vector<std::string> insert_explicit_concat_tokens(const std::vector<std::string>& tokens) {
+    std::vector<std::string> result;
+
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        result.push_back(tokens[i]);
+
+        if (i + 1 < tokens.size()) {
+            std::string a = tokens[i];
+            std::string b = tokens[i + 1];
+
+            bool aLiteral = (isalnum(a[0]) || a[0] == '[' || a == ")");
+            bool bLiteral = (isalnum(b[0]) || b[0] == '[' || b == "(");
+
+            if ((aLiteral && bLiteral) ||
+                (aLiteral && b == "(") ||
+                (a == ")" && bLiteral) ||
+                (a == "*" && bLiteral) ||
+                (a == "*" && b == "(") ||
+                (a == ")" && b == "(")) {
+                result.push_back("·");
+            }
+        }
+    }
+
+    return result;
+}
 
 /**
  * re_tokenize - Given a regexp, returns a stream of tokens representing
@@ -761,22 +794,20 @@ int construct_scanner() {
     std::cout << "Building trees of operations for scanner Regexps" << endl;
 
     auto int_re_tok = re_tokenize(INTEGER_REGEXP);
-    auto int_re_tok_post = re_to_postfix(int_re_tok);
+    auto int_re_tok_w_concat = insert_explicit_concat_tokens(int_re_tok);
+    auto int_re_tok_post = re_to_postfix(int_re_tok_w_concat);
     std::shared_ptr<regex_node> int_optree =
         build_thompson_tree(int_re_tok_post);
 
     auto key_re_tok = re_tokenize(KEYWORD_REGEXP);
-    auto key_re_tok_post = re_to_postfix(key_re_tok);
+    auto key_re_tok_w_concat = insert_explicit_concat_tokens(key_re_tok);
+    auto key_re_tok_post = re_to_postfix(key_re_tok_w_concat);
     std::shared_ptr<regex_node> key_optree =
         build_thompson_tree(key_re_tok_post);
 
-    // auto op_re_tok = re_tokenize(OPERATOR_REGEXP);
-    // auto op_re_tok_post = re_to_postfix(op_re_tok);
-    // std::shared_ptr<regex_node> op_optree =
-    // build_thompson_tree(op_re_tok_post);
-
     auto endl_re_tok = re_tokenize(END_LINE_REGEXP);
-    auto endl_re_tok_post = re_to_postfix(endl_re_tok);
+    auto endl_re_tok_w_concat = insert_explicit_concat_tokens(endl_re_tok);
+    auto endl_re_tok_post = re_to_postfix(endl_re_tok_w_concat);
     std::shared_ptr<regex_node> endl_optree =
         build_thompson_tree(endl_re_tok_post);
 
