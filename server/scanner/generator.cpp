@@ -145,14 +145,49 @@ void initialize_nfa(nfa &n, synthax_cat accept_state_cat = unknown) {
  * only epsilon transitions/closures.
  */
 unordered_set<state, state::hash_function>
-e_closure(nfa &nfa, unordered_set<state, state::hash_function> &q) {}
+e_closure(nfa &nfa, unordered_set<state, state::hash_function> &q) {
+    unordered_set<state,state::hash_function> result;
+    unordered_set<state,state::hash_function> sub_prob_result;
+
+    result.insert(q.begin(), q.end());
+    
+    for(const state& s:q) {
+        std::vector<string> reachables_ids = nfa.deltas.epsilon_transitions[s.name];
+        std::unordered_set<state, state::hash_function> reachables;
+
+        for(const std::string id: reachables_ids){
+            reachables.insert(nfa.states[id]);
+        }
+        
+        sub_prob_result = e_closure(nfa, reachables);
+        result.insert(sub_prob_result.begin(), sub_prob_result.end());
+    }
+
+    return result;
+}
 
 /**
- * delta - Applies the transition function to each element of
- * q, given a char c.
+ * delta_func - Applies the transition function to each element of
+ * q (set of NFA states), given a char c.
+ * If the input state has no transition for the given char it's ignored.
  */
-void delta_func(unordered_set<state, state::hash_function> &q,
-                unordered_set<state, state::hash_function> &result, char c) {}
+unordered_set<state,state::hash_function>
+delta_func(
+    nfa &nfa,
+    unordered_set<state, state::hash_function> &q,
+    char c
+) {
+    unordered_set<state,state::hash_function> result;
+    
+    for(const state s:q){
+        auto it = nfa.deltas.transitions[s.name].find(c);
+        if (it != nfa.deltas.transitions[s.name].end()){
+           result.insert(nfa.states[it->second]);
+        }
+    }
+
+    return result;
+}
 
 /**
  * nfa_append - Copies states and transitions from one nfa to another
@@ -707,7 +742,7 @@ static dfa subset_construction(nfa &nfa) {
         for (auto character : nfa.sigma) {
             result.clear();
             t.clear();
-            delta_func(q, result, character);
+            result = delta_func(nfa, q, character);
             t = e_closure(nfa, result);
 
             big_t[q][character] = t;
