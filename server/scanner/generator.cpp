@@ -780,7 +780,19 @@ static void generate_scanner_code(dfa &glob_dfa) {
             "#include \"generator.h\"\n"
             "#include <string>\n"
             "#include <vector>\n"
-            "#include <sys/syslog.h>\n"
+            "#include <sys/syslog.h>\n\n"
+            "int rollback(int &last_accept_idx, token &accept_token, unsigned int &i, string &buffer, Tokens &tokens){\n"
+            "\tif (last_accept_idx == -1){\n"
+            "\t\tsyslog(LOG_INFO, \"Invalid synthax:\");\n"
+            "\t\treturn -1;\n\t}\n"
+            "\ttokens.tokens.push_back(accept_token);\n"
+            "\t//Reset the buffer for next word\n"
+            "\ti=last_accept_idx+1;\n"
+            "\tlast_accept_idx=-1;\n"
+            "\tbuffer=\"\";\n"
+            "\taccept_token={\"\", unknown};\n"
+            "\treturn 0;\n"
+            "}\n\n"
             "/**\n"
             " * lexe - Given a request and a list of tokens allocated on the "
             "heap\n"
@@ -789,17 +801,16 @@ static void generate_scanner_code(dfa &glob_dfa) {
             "ssize_t lexe(Tokens &tokens, string input) \n"
             "{\n"
             "\tstring state = \"" + glob_dfa.start + "\";\n"
-            "\tint i = 0;\n"
+            "\tunsigned int i = 0;\n"
             "\tchar c = 0;\n"
-            "\tstring last_accept = \"\";\n"
+            "\ttoken accept_token = token{\"\",unknown};\n"
+            "\tstring buffer = \"\";\n"
             "\tint last_accept_idx = -1;\n"
-            "\tstd::unordered_map<string, synthax_cat> accept = {\n";
+            "\tunsigned int glob_last_accept_idx = -1;\n"
+            "\t//Adding a space to enable munching token on last input\n"
+            "\tinput += \" \";\n\n";
 
-        for (const auto& [state, synthax_cat] : glob_dfa.accept) {
-            content += "\t\t{\""+ state.name + "\", " + synthax_cat_to_string(synthax_cat) + "},\n";
-        }
 
-        content += "\t};\n\n";
 
         content+= "\twhile (i < input.size()) {\n";
         content+= "\t\tc=input[i];\n";
@@ -810,36 +821,41 @@ static void generate_scanner_code(dfa &glob_dfa) {
             auto it = glob_dfa.accept.find(state);
             if (it != glob_dfa.accept.end()){
                 //Maximum munch here, we record the biggest buffer possible
-                case_statement+= "\t\t\tlast_accept=\""+state.name+"\";\n";
+                case_statement+= "\t\t\taccept_token=token{buffer,"+synthax_cat_to_string(it->second)+"};\n";
                 case_statement+= "\t\t\tlast_accept_idx=i;\n";
+                case_statement+= "\t\t\tglob_last_accept_idx=i;\n";
             }
+
+            case_statement+= "\t\t\tif (i == input.size()-1) {\n"
+                "\t\t\t\t//force rollback on artificially added last char\n"
+                "\t\t\t\tint r = rollback(last_accept_idx, accept_token, i, buffer,tokens);\n"
+                "\t\t\t\tif (r != 0) {\n"
+                "\t\t\t\t\treturn r;\n"
+                "\t\t\t\t}\n"
+                "\t\t\t}\n";
+
             fprintf(fp, "%s", case_statement.c_str());
 
             auto next = glob_dfa.deltas[state];
             for (const auto &[ch, next_state] : next) {
                 string transition = "\t\t\tif (c == '" + string(1, ch) +
-                                    "') state = \"" + next_state.name + "\";i++;continue;\n";
+                                    "') state = \"" + next_state.name + "\";buffer+=c;i++;continue;\n";
                 fprintf(fp, "%s", transition.c_str());
             }
 
             // If program arrives here, it means no transition for current
             // char, try to rollback.
-            string rollback = "\t\t\t//rollback if no transition on c\n";
-            
-            rollback+="\t\t\tif (last_accept_idx == -1){\n";
-            rollback+="\t\t\t\tsyslog(LOG_INFO, \"Invalid synthax:\"+input);\n";
-            rollback+= "\t\t\t\treturn -1;\n\t\t\t}\n";
-
-            rollback+="\t\t\t//Reset the buffer for next word\n";
-            rollback+="\t\t\ti=last_accept_idx+1;\n";
-            rollback+="\t\t\tlast_accept_idx=-1;\n";
-            rollback+="\t\t\tlast_accept=\"\";\n\t\t}\n";
+            string rollback = "\t\t\tint r = rollback(last_accept_idx, accept_token, i, buffer, tokens);\n";
+            rollback+="\t\t\tif (r != 0) {\n"
+                "\t\t\t\treturn r;\n"
+                "\t\t\t}\n\t\t}\n";
             fprintf(fp, "%s", rollback.c_str());
         }
 
-        string end ="\t\tif (tokens.tokens.size() == 0 || last_accept_idx != input.size() -1){\n";
-        end+="\t\t\tsyslog(LOG_INFO, \"Invalid synthax: \"+ input);\n\t\t\treturn -1;\n";
-        end += "\t\t}\n    return 0;\n}\n";
+        //-2 because we added a space at the end of the input 
+        string end ="\t\tif (tokens.tokens.size() == 0 || glob_last_accept_idx != input.size() -2){\n";
+        end+="\t\t\tsyslog(LOG_INFO, \"Invalid synthax: \");\n\t\t\treturn -1;\n";
+        end += "\t\t}\n\t}\n    return 0;\n}\n";
 
         fprintf(fp, "%s", end.c_str()); // Write content to the file
         fclose(fp);                     // Correct way to close FILE*

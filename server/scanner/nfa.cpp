@@ -11,7 +11,7 @@ string synthax_cat_to_string(synthax_cat category) {
     case identifier:
         return "identifier";
     case op:
-        return "operator";
+        return "op";
     case endline:
         return "endline";
     default:
@@ -58,22 +58,24 @@ void nfa::generate_dot(const string &filename) const {
             } else {
                 new_to = to;
             }
-            file << "    \"" << new_from << "\" -> \"" << new_to << "\" [label=\""
-                 << symbol << "\"];\n";
+            file << "    \"" << new_from << "\" -> \"" << new_to
+                 << "\" [label=\"" << symbol << "\"];\n";
         }
     }
 
     // Epsilon transitions
 
     for (const auto &[from, to_list] : deltas.epsilon_transitions) {
-        //Print accept synthax cat in the graph instead of their uuid state names
+        // Print accept synthax cat in the graph instead of their uuid state
+        // names
         if (accept.find(from) != accept.end()) {
             new_from = synthax_cat_to_string(accept.at(from));
         } else {
             new_from = from;
         }
 
-        //Print accept synthax cat in the graph instead of their uuid state names
+        // Print accept synthax cat in the graph instead of their uuid state
+        // names
         for (const string &to : to_list) {
             if (accept.find(to) != accept.end()) {
                 new_to = synthax_cat_to_string(accept.at(to));
