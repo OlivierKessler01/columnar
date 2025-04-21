@@ -677,16 +677,16 @@ static state &normalize_dfa(
 
     state_set_hash hasher;
     state clean_dfa_state;
-    size_t hash = hasher(dfa_state);
+    string hash = to_string(hasher(dfa_state));
 
-    auto it = dfa.states.find(to_string(hash));
+    auto it = dfa.states.find(hash);
     if (it != dfa.states.end()) {
         // We already visited this node
-        return dfa.states[to_string(hash)];
+        return dfa.states[hash];
     }
-
+    
     clean_dfa_state.name = hash;
-    dfa.states[to_string(hash)] = clean_dfa_state;
+    dfa.states[hash] = clean_dfa_state;
 
     auto it2 = big_t.find(dfa_state);
     if (it2 != big_t.end()) {
@@ -706,7 +706,7 @@ static state &normalize_dfa(
         }
     }
 
-    return dfa.states[to_string(hash)];
+    return dfa.states[hash];
 }
 
 /**
@@ -777,49 +777,70 @@ static void generate_scanner_code(dfa &glob_dfa) {
     if (fp != NULL) {
         string content =
             "#include \"scanner.h\"\n"
-            "#include <string>\n\n"
+            "#include \"generator.h\"\n"
+            "#include <string>\n"
+            "#include <vector>\n"
+            "#include <sys/syslog.h>\n"
             "/**\n"
             " * lexe - Given a request and a list of tokens allocated on the "
             "heap\n"
             " *\n"
             " */\n"
-            "ssize_t lexe(Tokens &tokens, string str) \n"
+            "ssize_t lexe(Tokens &tokens, string input) \n"
             "{\n"
-            "\tstring state = \"" +
-            glob_dfa.start +
-            "\";\n\n"
-            "\tswitch(state){\n";
+            "\tstring state = \"" + glob_dfa.start + "\";\n"
+            "\tint i = 0;\n"
+            "\tchar c = 0;\n"
+            "\tstring last_accept = \"\";\n"
+            "\tint last_accept_idx = -1;\n"
+            "\tstd::unordered_map<string, synthax_cat> accept = {\n";
 
+        for (const auto& [state, synthax_cat] : glob_dfa.accept) {
+            content += "\t\t{\""+ state.name + "\", " + synthax_cat_to_string(synthax_cat) + "},\n";
+        }
+
+        content += "\t};\n\n";
+
+        content+= "\twhile (i < input.size()) {\n";
+        content+= "\t\tc=input[i];\n";
         fprintf(fp, "%s", content.c_str()); // Write content to the file
 
         for (const auto &[id, state] : glob_dfa.states) {
-            string case_statement = "\tcase \"" + state.name + "\":\n";
+            string case_statement = "\t\tif (state == \"" + state.name + "\"){\n";
+            auto it = glob_dfa.accept.find(state);
+            if (it != glob_dfa.accept.end()){
+                //Maximum munch here, we record the biggest buffer possible
+                case_statement+= "\t\t\tlast_accept=\""+state.name+"\";\n";
+                case_statement+= "\t\t\tlast_accept_idx=i;\n";
+            }
             fprintf(fp, "%s", case_statement.c_str());
 
-            auto it = glob_dfa.accept.find(state);
-            if (it != glob_dfa.accept.end()) {
-                // The current state is a final step,
-                // save the current buffer as maximum munch.
-            } else {
-                auto next = glob_dfa.deltas[state];
-                for (const auto &[ch, next_state] : next) {
-                    string transition = "\t\tif (input == '" + string(1, ch) +
-                                        "') state = " + next_state.name + ";\n";
-                    fprintf(fp, "%s", transition.c_str());
-                }
-
-                // If program arrives here, it means no transition for current
-                // char, try to rollack.
-                string rollback = "            rollback();\n";
-                fprintf(fp, "%s", rollback.c_str());
+            auto next = glob_dfa.deltas[state];
+            for (const auto &[ch, next_state] : next) {
+                string transition = "\t\t\tif (c == '" + string(1, ch) +
+                                    "') state = \"" + next_state.name + "\";i++;continue;\n";
+                fprintf(fp, "%s", transition.c_str());
             }
+
+            // If program arrives here, it means no transition for current
+            // char, try to rollback.
+            string rollback = "\t\t\t//rollback if no transition on c\n";
+            
+            rollback+="\t\t\tif (last_accept_idx == -1){\n";
+            rollback+="\t\t\t\tsyslog(LOG_INFO, \"Invalid synthax:\"+input);\n";
+            rollback+= "\t\t\t\treturn -1;\n\t\t\t}\n";
+
+            rollback+="\t\t\t//Reset the buffer for next word\n";
+            rollback+="\t\t\ti=last_accept_idx+1;\n";
+            rollback+="\t\t\tlast_accept_idx=-1;\n";
+            rollback+="\t\t\tlast_accept=\"\";\n\t\t}\n";
+            fprintf(fp, "%s", rollback.c_str());
         }
 
-        string def = "\tdefault:\n\t\t perror(\"State unknown in the "
-                     "DFA\");\n\t\t exit(EXIT_FAILURE);\n";
-        string end = "\t}\n    return 0;\n}\n";
+        string end ="\t\tif (tokens.tokens.size() == 0 || last_accept_idx != input.size() -1){\n";
+        end+="\t\t\tsyslog(LOG_INFO, \"Invalid synthax: \"+ input);\n\t\t\treturn -1;\n";
+        end += "\t\t}\n    return 0;\n}\n";
 
-        fprintf(fp, "%s", def.c_str()); // Write content to the file
         fprintf(fp, "%s", end.c_str()); // Write content to the file
         fclose(fp);                     // Correct way to close FILE*
     } else {
