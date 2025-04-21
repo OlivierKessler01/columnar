@@ -196,6 +196,8 @@ static void nfa_append(nfa &src, nfa &dest) {
     dest.states.insert(src.states.begin(), src.states.end());
     dest.deltas.transitions.insert(src.deltas.transitions.begin(),
                                    src.deltas.transitions.end());
+
+    dest.sigma.insert(src.sigma.begin(), src.sigma.end());
     dest.deltas.epsilon_transitions.insert(
         src.deltas.epsilon_transitions.begin(),
         src.deltas.epsilon_transitions.end());
@@ -208,6 +210,7 @@ static void nfa_append(nfa &src, nfa &dest) {
 static void add_delta_nfa(nfa &nfa, string from_id, string to_id,
                           char character) {
     nfa.deltas.transitions[from_id][character] = to_id;
+    nfa.sigma.insert(character);
 }
 
 /**
@@ -364,7 +367,7 @@ static void full_kleene_construct(nfa &a) {
 nfa create_single_char_nfa(char ch, synthax_cat cat) {
     nfa result;
     initialize_nfa(result, cat);
-    result.deltas.transitions[result.start][ch] = result.accept.begin()->first;
+    add_delta_nfa(result, result.start, result.accept.begin()->first, ch);
     return result;
 }
 
@@ -788,9 +791,9 @@ static void generate_scanner_code(dfa &glob_dfa) {
             " */\n"
             "ssize_t lexe(Tokens &tokens, string str) \n"
             "{\n"
-            "\tstring state = " +
+            "\tstring state = \"" +
             glob_dfa.start +
-            ";\n"
+            "\";\n"
             "\tswitch(state){\n";
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
