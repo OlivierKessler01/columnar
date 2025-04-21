@@ -624,45 +624,51 @@ build_thompson_tree(const vector<string> &postfixTokens) {
 }
 
 /**
- * Use DFS to generate a clean DFA from a subset construction representation 
- * of a DFA. 
+ * Use DFS to generate a clean DFA from a subset construction representation
+ * of a DFA.
  * Out of the subset construction : each DFA state is a set of NFA states.
  * After this routine : each DFA state is a state struct.
  */
-static state& normalize_dfa(
+static state &normalize_dfa(
     dfa &dfa,
     unordered_map<
         unordered_set<state, state::hash_function>,
         unordered_map<char, unordered_set<state, state::hash_function>>,
-        state_set_hash, state_set_pred
-    > &big_t,
-    unordered_set<
-        unordered_set<state, state::hash_function>,
-            state_set_hash,
-            state_set_pred
-    > &big_q,
-    unordered_set<state, state::hash_function> dfa_state_as_nfa_states
-) {
+        state_set_hash, state_set_pred> &big_t,
+    unordered_set<unordered_set<state, state::hash_function>, state_set_hash,
+                  state_set_pred> &big_q,
+    unordered_set<state, state::hash_function> dfa_state_as_nfa_states,
+    unordered_map<string, synthax_cat> nfa_accepts) {
     state_set_hash hasher;
     state clean_dfa_state;
     size_t hash = hasher(dfa_state_as_nfa_states);
 
     auto it = dfa.states.find(to_string(hash));
-    if (it != dfa.states.end()){
-        //We already visited this node
+    if (it != dfa.states.end()) {
+        // We already visited this node
         return dfa.states[to_string(hash)];
-    }   
-    
+    }
+
     clean_dfa_state.name = hash;
-    dfa.states[to_string(hash)] = clean_dfa_state; 
+    dfa.states[to_string(hash)] = clean_dfa_state;
 
     auto it2 = big_t.find(dfa_state_as_nfa_states);
-    if (it2 != big_t.end()){
-        for(const auto &[ch, to]: it2->second) {
-            dfa.deltas[clean_dfa_state][ch] = normalize_dfa(dfa,big_t,big_q,to);
+    if (it2 != big_t.end()) {
+        for (const auto &[ch, to] : it2->second) {
+            dfa.deltas[clean_dfa_state][ch] =
+                normalize_dfa(dfa, big_t, big_q, to, nfa_accepts);
         }
-    }   
-    //TODO set accept
+    }
+
+    // If an accepting state in the set of NFA states represented by the DFA
+    // state, then the DFA state is also an accepting state
+    for (const state &nfa_state : dfa_state_as_nfa_states) {
+        auto it3 = nfa_accepts.find(nfa_state.name);
+        if (it3 != nfa_accepts.end()) {
+            dfa.accept[clean_dfa_state] = it3->second; 
+            break;
+        }
+    }
 
     return dfa.states[to_string(hash)];
 }
@@ -712,13 +718,13 @@ static dfa subset_construction(nfa &nfa) {
             }
         }
     }
-    
+
     state_set_hash hasher;
     state clean_dfa_state;
     size_t start_hash = hasher(q0);
     deterministic_automata.start = to_string(start_hash);
 
-    normalize_dfa(deterministic_automata, big_t, big_q, q0);
+    normalize_dfa(deterministic_automata, big_t, big_q, q0, nfa.accept);
     return deterministic_automata;
 }
 
