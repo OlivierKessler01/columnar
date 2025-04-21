@@ -624,6 +624,50 @@ build_thompson_tree(const vector<string> &postfixTokens) {
 }
 
 /**
+ * Use DFS to generate a clean DFA from a subset construction representation 
+ * of a DFA. 
+ * Out of the subset construction : each DFA state is a set of NFA states.
+ * After this routine : each DFA state is a state struct.
+ */
+static state& normalize_dfa(
+    dfa &dfa,
+    unordered_map<
+        unordered_set<state, state::hash_function>,
+        unordered_map<char, unordered_set<state, state::hash_function>>,
+        state_set_hash, state_set_pred
+    > &big_t,
+    unordered_set<
+        unordered_set<state, state::hash_function>,
+            state_set_hash,
+            state_set_pred
+    > &big_q,
+    unordered_set<state, state::hash_function> dfa_state_as_nfa_states
+) {
+    state_set_hash hasher;
+    state clean_dfa_state;
+    size_t hash = hasher(dfa_state_as_nfa_states);
+
+    auto it = dfa.states.find(to_string(hash));
+    if (it != dfa.states.end()){
+        //We already visited this node
+        return dfa.states[to_string(hash)];
+    }   
+    
+    clean_dfa_state.name = hash;
+    dfa.states[to_string(hash)] = clean_dfa_state; 
+
+    auto it2 = big_t.find(dfa_state_as_nfa_states);
+    if (it2 != big_t.end()){
+        for(const auto &[ch, to]: it2->second) {
+            dfa.deltas[clean_dfa_state][ch] = normalize_dfa(dfa,big_t,big_q,to);
+        }
+    }   
+    //TODO set accept
+
+    return dfa.states[to_string(hash)];
+}
+
+/**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
@@ -668,43 +712,13 @@ static dfa subset_construction(nfa &nfa) {
             }
         }
     }
-
+    
     state_set_hash hasher;
-    state dfa_state, to_state;
-    size_t state_hash, to_state_hash;
-    //DFA states, out of the subset construction, are represented at sets 
-    //(q) or (t) of NFA states. 1 DFA state corresponds to 1,n NFA states.
-    for (const auto &q : big_q) {
-        state_hash = hasher(q);
+    state clean_dfa_state;
+    size_t start_hash = hasher(q0);
+    deterministic_automata.start = to_string(start_hash);
 
-        auto it = deterministic_automata.states.find(to_string(state_hash));
-        if (it != deterministic_automata.states.end()) {
-            dfa_state = it->second;
-        } else {
-            dfa_state = state{to_string(state_hash)};
-            deterministic_automata.states[to_string(state_hash)] = dfa_state;
-        }
-
-        auto it2 = big_t.find(q);
-        if (it2 != big_t.end()) {
-            unordered_map<char, unordered_set<state, state::hash_function>> transition = it2->second;
-            for(const auto &[ch, to] : transition){
-                //The to state is represented as a set of NFA state
-                to_state_hash = hasher(to);
-
-                auto it = deterministic_automata.states.find(to_string(to_state_hash));
-                if (it != deterministic_automata.states.end()) {
-                    to_state = it->second;
-                } else {
-                    to_state = state{to_string(to_state_hash)};
-                    deterministic_automata.states[to_string(to_state_hash)] = to_state;
-                }
-
-                deterministic_automata.deltas[dfa_state][ch] = to_state;
-            }
-        }
-    }
-
+    normalize_dfa(deterministic_automata, big_t, big_q, q0);
     return deterministic_automata;
 }
 
