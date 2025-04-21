@@ -793,13 +793,13 @@ static void generate_scanner_code(dfa &glob_dfa) {
             "{\n"
             "\tstring state = \"" +
             glob_dfa.start +
-            "\";\n"
+            "\";\n\n"
             "\tswitch(state){\n";
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
 
         for (const auto &[id, state] : glob_dfa.states) {
-            string case_statement = "\tcase " + state.name + ":";
+            string case_statement = "\tcase \"" + state.name + "\":\n";
             fprintf(fp, "%s", case_statement.c_str());
 
             auto it = glob_dfa.accept.find(state);
