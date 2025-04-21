@@ -31,43 +31,43 @@
 using std::cout, std::endl, std::vector, std::unordered_map, std::unordered_set;
 
 namespace uuid {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, 15);
-    static std::uniform_int_distribution<> dis2(8, 11);
+static std::random_device rd;
+static std::mt19937 gen(rd());
+static std::uniform_int_distribution<> dis(0, 15);
+static std::uniform_int_distribution<> dis2(8, 11);
 
-    /**
-     * Generates UUIDs with 32 bits of randomness
-     * Number of possible combinations : approx 4E9
-     * Should be enough for the number of states we use
-     */
-    string generate_uuid_v4() {
-        stringstream ss;
-        int i;
-        ss << std::hex;
-        for (i = 0; i < 8; i++) {
-            ss << dis(gen);
-        }
-        ss << "-";
-        for (i = 0; i < 4; i++) {
-            ss << dis(gen);
-        }
-        ss << "-4";
-        for (i = 0; i < 3; i++) {
-            ss << dis(gen);
-        }
-        ss << "-";
-        ss << dis2(gen);
-        for (i = 0; i < 3; i++) {
-            ss << dis(gen);
-        }
-        ss << "-";
-        for (i = 0; i < 12; i++) {
-            ss << dis(gen);
-        };
-        return ss.str();
+/**
+ * Generates UUIDs with 32 bits of randomness
+ * Number of possible combinations : approx 4E9
+ * Should be enough for the number of states we use
+ */
+string generate_uuid_v4() {
+    stringstream ss;
+    int i;
+    ss << std::hex;
+    for (i = 0; i < 8; i++) {
+        ss << dis(gen);
     }
+    ss << "-";
+    for (i = 0; i < 4; i++) {
+        ss << dis(gen);
+    }
+    ss << "-4";
+    for (i = 0; i < 3; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    ss << dis2(gen);
+    for (i = 0; i < 3; i++) {
+        ss << dis(gen);
+    }
+    ss << "-";
+    for (i = 0; i < 12; i++) {
+        ss << dis(gen);
+    };
+    return ss.str();
 }
+} // namespace uuid
 
 struct regex_node {
     int variant; // 0 for literal, 1 for union, 2 for concat, 3 for kleene
@@ -144,30 +144,26 @@ void initialize_nfa(nfa &n, synthax_cat accept_state_cat = unknown) {
  * e_closure - Takes a set of states, returns a set of states reacheable via
  * only epsilon transitions/closures.
  */
-void e_closure(unordered_set<state, state::hash_function> &q,
-               unordered_set<state, state::hash_function> &result) {}
+unordered_set<state, state::hash_function>
+e_closure(nfa &nfa, unordered_set<state, state::hash_function> &q) {}
 
 /**
  * delta - Applies the transition function to each element of
  * q, given a char c.
  */
 void delta_func(unordered_set<state, state::hash_function> &q,
-                unordered_set<state, state::hash_function> &result,
-                char c) {}
+                unordered_set<state, state::hash_function> &result, char c) {}
 
 /**
  * nfa_append - Copies states and transitions from one nfa to another
  */
 static void nfa_append(nfa &src, nfa &dest) {
     dest.states.insert(src.states.begin(), src.states.end());
-    dest.deltas.transitions.insert(
-        src.deltas.transitions.begin(),
-        src.deltas.transitions.end()
-    );
+    dest.deltas.transitions.insert(src.deltas.transitions.begin(),
+                                   src.deltas.transitions.end());
     dest.deltas.epsilon_transitions.insert(
         src.deltas.epsilon_transitions.begin(),
-        src.deltas.epsilon_transitions.end()
-    );
+        src.deltas.epsilon_transitions.end());
 }
 
 /**
@@ -205,7 +201,7 @@ static void add_delta_nfa(nfa &nfa, string from_id, string to_id,
  */
 static void full_union_construct(vector<nfa> &src, nfa &result) {
     // Copy state and transitions from a and b to result
-    for(auto &n: src) {
+    for (auto &n : src) {
         nfa_append(n, result);
         result.deltas.epsilon_transitions[result.start].push_back(n.start);
 
@@ -269,9 +265,9 @@ static void full_concat_construct(vector<nfa> &src, nfa &result) {
     result.states.clear();
     result.accept.clear();
 
-    for(nfa &n: src) {
+    for (nfa &n : src) {
         nfa_append(n, result);
-        for(auto &[acc,cat]: result.accept) {
+        for (auto &[acc, cat] : result.accept) {
             result.deltas.epsilon_transitions[acc].push_back(n.start);
         }
         result.accept = n.accept;
@@ -317,7 +313,7 @@ static void full_kleene_construct(nfa &a) {
     a.states[new_start.name] = new_start;
     a.accept.clear();
 
-    for (auto &[old_acc, cat]: old_accept){
+    for (auto &[old_acc, cat] : old_accept) {
         new_accept = state{uuid::generate_uuid_v4()};
 
         a.accept[new_accept.name] = cat;
@@ -338,33 +334,31 @@ nfa create_single_char_nfa(char ch, synthax_cat cat) {
 }
 
 /**
- * char_class_construct - Given a character class, build the NFA to recognize 
+ * char_class_construct - Given a character class, build the NFA to recognize
  * it.
  *
  * class is 'a-z' format or 'abcds....' format
  *
  */
-int char_class_construct(nfa &result, string c)
-{
+int char_class_construct(nfa &result, string c) {
     if (c.size() == 3 && c.at(1) == '-') {
-        if(c == "a-z") {
+        if (c == "a-z") {
             c = "abcdefghijklmnopqrstuvwxyz";
-        } else if(c == "A-Z") {
+        } else if (c == "A-Z") {
             c = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        } else if(c == "a-Z") {
+        } else if (c == "a-Z") {
             c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        } else if(c == "0-9") {
+        } else if (c == "0-9") {
             c = "0123456789";
-        } else if(c == "1-9") {
+        } else if (c == "1-9") {
             c = "123456789";
         }
-    } 
-    
+    }
+
     vector<nfa> src;
-    for(char &character: c) {
+    for (char &character : c) {
         src.push_back(
-            create_single_char_nfa(character, result.accept.begin()->second)
-        );
+            create_single_char_nfa(character, result.accept.begin()->second));
     }
 
     full_union_construct(src, result);
@@ -372,9 +366,9 @@ int char_class_construct(nfa &result, string c)
 }
 
 /**
- * literal_construct - Constructs a NFA that can recognize a string/literal 
+ * literal_construct - Constructs a NFA that can recognize a string/literal
  * using individual nfa for each char and concatenating them.
- * 
+ *
  * Example : literal == "oli"
  *
  *        (New Start State)
@@ -383,7 +377,7 @@ int char_class_construct(nfa &result, string c)
  *               |
  *        (Second State)
  *               |
- *               | ε 
+ *               | ε
  *               |
  *        (Third State)
  *               |
@@ -391,7 +385,7 @@ int char_class_construct(nfa &result, string c)
  *               |
  *        (Fourth State)
  *               |
- *               | ε 
+ *               | ε
  *               |
  *        (Fifth State)
  *               |
@@ -400,8 +394,7 @@ int char_class_construct(nfa &result, string c)
  *        (Accept state)
  *
  */
-nfa literal_construct(string literal, synthax_cat cat)
-{
+nfa literal_construct(string literal, synthax_cat cat) {
     nfa current_char_nfa, prev_char_nfa, result_nfa;
     vector<nfa> src;
 
@@ -414,16 +407,17 @@ nfa literal_construct(string literal, synthax_cat cat)
 
     // Check if literal is a character class (e.g., "[a-z]" or "[abc]")
     if (literal.front() == '[' && literal.back() == ']') {
-        string char_class = literal.substr(1, literal.size() - 2);  // Exclude brackets
+        string char_class =
+            literal.substr(1, literal.size() - 2); // Exclude brackets
         char_class_construct(result_nfa, char_class);
     } else {
-        //Do the rest
-        for(char &c: literal){
+        // Do the rest
+        for (char &c : literal) {
             src.push_back(create_single_char_nfa(c, cat));
         }
         full_concat_construct(src, result_nfa);
     }
-     
+
     return result_nfa;
 }
 
@@ -480,7 +474,7 @@ int thompson_construction(nfa &n, std::shared_ptr<regex_node> node) {
  * insert_explicit_concat_tokens - Given regexp tokens, insert explicit "."
  * concatenation operators so we can postfix it.
  */
-vector<string> insert_explicit_concat_tokens(const vector<string>& tokens) {
+vector<string> insert_explicit_concat_tokens(const vector<string> &tokens) {
     vector<string> result;
 
     for (size_t i = 0; i < tokens.size(); ++i) {
@@ -493,12 +487,9 @@ vector<string> insert_explicit_concat_tokens(const vector<string>& tokens) {
             bool aLiteral = (isalnum(a[0]) || a[0] == '[' || a == ")");
             bool bLiteral = (isalnum(b[0]) || b[0] == '[' || b == "(");
 
-            if ((aLiteral && bLiteral) ||
-                (aLiteral && b == "(") ||
-                (a == ")" && bLiteral) ||
-                (a == "*" && bLiteral) ||
-                (a == "*" && b == "(") ||
-                (a == ")" && b == "(")) {
+            if ((aLiteral && bLiteral) || (aLiteral && b == "(") ||
+                (a == ")" && bLiteral) || (a == "*" && bLiteral) ||
+                (a == "*" && b == "(") || (a == ")" && b == "(")) {
                 result.push_back("·");
             }
         }
@@ -555,10 +546,9 @@ static vector<string> re_tokenize(const string &regex) {
 static vector<string> re_to_postfix(const vector<string> &tokens) {
     vector<string> output;
     std::stack<string> operators;
-    unordered_map<string, int> precedence = { {"*", 3}, {"·", 2}, {"|", 1}};
+    unordered_map<string, int> precedence = {{"*", 3}, {"·", 2}, {"|", 1}};
     unordered_map<string, bool> rightAssociative = {
-        {"*", true}, {"·", false}, {"|", false}
-    };
+        {"*", true}, {"·", false}, {"|", false}};
 
     auto isOperator = [&](const string &token) {
         return precedence.find(token) != precedence.end();
@@ -609,8 +599,7 @@ build_thompson_tree(const vector<string> &postfixTokens) {
             auto operand = nodeStack.top();
             nodeStack.pop();
             nodeStack.push(
-                std::make_shared<regex_node>(3, operand, nullptr, "")
-            );
+                std::make_shared<regex_node>(3, operand, nullptr, ""));
         } else if (token == "|") {
             auto right = nodeStack.top();
             nodeStack.pop();
@@ -634,51 +623,25 @@ build_thompson_tree(const vector<string> &postfixTokens) {
     return nodeStack.top();
 }
 
-// Hash set of states
-struct state_set_hash {
-    size_t
-    operator()(const unordered_set<state, state::hash_function> &s) const {
-        string result;
-        for (const auto &state : s) {
-            result += state.name;
-        }
-        // Just hash the name field
-        return std::hash<string>()(result);
-    }
-};
-
-// Compare two set of states
-struct state_set_pred {
-    bool operator()(
-        const unordered_set<state, state::hash_function> &s1,
-        const unordered_set<state, state::hash_function> &s2) const {
-        return s1 == s2;
-    }
-};
-
 /**
  * Constructs a deterministic finite automaton from a non-deterministic finite
  * automaton.
  */
-static void subset_construction(nfa &nfa, dfa &dfa) {
-    vector<state> current;
+static dfa subset_construction(nfa &nfa) {
+    dfa deterministic_automata;
     unordered_set<state, state::hash_function> q0, q, n0_set, t, result;
-    unordered_set<
-        unordered_set<state, state::hash_function>,
-        state_set_hash, state_set_pred> worklist, big_q;
+    unordered_set<unordered_set<state, state::hash_function>, state_set_hash,
+                  state_set_pred>
+        worklist, big_q;
 
     unordered_map<
         unordered_set<state, state::hash_function>,
-        unordered_map<
-            char,
-            unordered_set<state, state::hash_function>
-        >,
-        state_set_hash,
-        state_set_pred
-    > big_t;
+        unordered_map<char, unordered_set<state, state::hash_function>>,
+        state_set_hash, state_set_pred>
+        big_t;
 
     n0_set.insert(nfa.states[nfa.start]);
-    e_closure(n0_set, q0);
+    q0 = e_closure(nfa, n0_set);
     big_q.insert(q0);
     worklist.insert(q0);
 
@@ -695,7 +658,7 @@ static void subset_construction(nfa &nfa, dfa &dfa) {
             result.clear();
             t.clear();
             delta_func(q, result, character);
-            e_closure(result, t);
+            t = e_closure(nfa, result);
 
             big_t[q][character] = t;
 
@@ -705,6 +668,44 @@ static void subset_construction(nfa &nfa, dfa &dfa) {
             }
         }
     }
+
+    state_set_hash hasher;
+    state dfa_state, to_state;
+    size_t state_hash, to_state_hash;
+    //DFA states, out of the subset construction, are represented at sets 
+    //(q) or (t) of NFA states. 1 DFA state corresponds to 1,n NFA states.
+    for (const auto &q : big_q) {
+        state_hash = hasher(q);
+
+        auto it = deterministic_automata.states.find(to_string(state_hash));
+        if (it != deterministic_automata.states.end()) {
+            dfa_state = it->second;
+        } else {
+            dfa_state = state{to_string(state_hash)};
+            deterministic_automata.states[to_string(state_hash)] = dfa_state;
+        }
+
+        auto it2 = big_t.find(q);
+        if (it2 != big_t.end()) {
+            unordered_map<char, unordered_set<state, state::hash_function>> transition = it2->second;
+            for(const auto &[ch, to] : transition){
+                //The to state is represented as a set of NFA state
+                to_state_hash = hasher(to);
+
+                auto it = deterministic_automata.states.find(to_string(to_state_hash));
+                if (it != deterministic_automata.states.end()) {
+                    to_state = it->second;
+                } else {
+                    to_state = state{to_string(to_state_hash)};
+                    deterministic_automata.states[to_string(to_state_hash)] = to_state;
+                }
+
+                deterministic_automata.deltas[dfa_state][ch] = to_state;
+            }
+        }
+    }
+
+    return deterministic_automata;
 }
 
 /**
@@ -715,13 +716,11 @@ static void minimize_dfa(dfa &dfa) {
     // TODO: Minimize the DFA
 }
 
-
 /**
  * generate_scanner_code() - Generate the scanner code as a file.
  */
 static void generate_scanner_code(dfa &glob_dfa) {
-    FILE *fp =
-        fopen("server/scanner/scanner.cpp", "w"); // Open file in write mode
+    FILE *fp = fopen("server/scanner/scanner.cpp", "w");
 
     if (fp != NULL) {
         string content =
@@ -741,19 +740,19 @@ static void generate_scanner_code(dfa &glob_dfa) {
 
         fprintf(fp, "%s", content.c_str()); // Write content to the file
 
-        for (const auto &[state_uid, state] : glob_dfa.states) {
-            string case_statement = "\tcase " + state_uid + ":";
+        for (const auto &[id, state] : glob_dfa.states) {
+            string case_statement = "\tcase " + state.name + ":";
             fprintf(fp, "%s", case_statement.c_str());
 
-            auto it = glob_dfa.accept.find(state_uid);
+            auto it = glob_dfa.accept.find(state);
             if (it != glob_dfa.accept.end()) {
                 // The current state is a final step,
                 // save the current buffer as maximum munch.
             } else {
-                auto next = glob_dfa.deltas.transitions[state_uid];
+                auto next = glob_dfa.deltas[state];
                 for (const auto &[ch, next_state] : next) {
                     string transition = "\t\tif (input == '" + string(1, ch) +
-                                        "') state = " + next_state + ";\n";
+                                        "') state = " + next_state.name + ";\n";
                     fprintf(fp, "%s", transition.c_str());
                 }
 
@@ -786,7 +785,7 @@ int construct_scanner() {
     nfa int_nfa, key_nfa, op_nfa, endl_nfa, glob_nfa;
     initialize_nfa(int_nfa, integer);
     initialize_nfa(key_nfa, keyword);
-    //initialize_nfa(op_nfa, op);
+    // initialize_nfa(op_nfa, op);
     initialize_nfa(endl_nfa, endline);
     initialize_nfa(glob_nfa, unknown);
     glob_nfa.accept.clear();
@@ -830,7 +829,7 @@ int construct_scanner() {
     thompson_construction(key_nfa, key_optree);
     cout << "Converting ENDLINE Optree to nfa" << endl;
     thompson_construction(endl_nfa, endl_optree);
-    
+
     int_nfa.generate_dot("/tmp/int_nfa.dot");
     key_nfa.generate_dot("/tmp/key_nfa.dot");
     endl_nfa.generate_dot("/tmp/endl_nfa.dot");
@@ -841,10 +840,10 @@ int construct_scanner() {
     glob_nfa.generate_dot("/tmp/nfa.dot");
 
     cout << "Converting Global nfa to dfa" << endl;
-    subset_construction(glob_nfa, glob_dfa);
+    glob_dfa = subset_construction(glob_nfa);
     cout << "Minimizing the dfa" << endl;
 
-    // minimize_dfa(int_dfa);
+    // minimize_dfa(glob_dfa);
     cout << "Generate scanner C++ code as a file." << endl;
     generate_scanner_code(glob_dfa);
 
@@ -892,7 +891,7 @@ int test_full_union_construct() {
     auto any_b_acc = b.accept.begin();
     add_delta_nfa(a, a.start, any_a_acc->first, 'c');
     add_delta_nfa(b, b.start, any_b_acc->first, 'd');
-    
+
     src.push_back(a);
     src.push_back(b);
 
@@ -914,7 +913,7 @@ int test_literal_construct() {
     nfa a;
     string literal = "oli";
     a = literal_construct(literal, integer);
-    
+
     assert(a.deltas.transitions[a.start].size() == 1);
     assert(a.deltas.transitions[a.start].begin()->first == 'o');
     assert(a.accept.begin()->second == integer);

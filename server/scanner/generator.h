@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -55,17 +56,48 @@ struct nfa {
     void generate_dot(const string &filename) const;
     string start;
     unordered_map<string, synthax_cat> accept; // accepting states
-    unordered_set<char> sigma;                 // finite alphabet used by the nfa
-    unordered_map<string, state> states;       // [state_uid -> state...]
+    unordered_set<char> sigma;           // finite alphabet used by the nfa
+    unordered_map<string, state> states; // [state_uid -> state...]
     deltas_t deltas;
 };
 
 struct dfa {
     string start;
-    unordered_map<string, synthax_cat> accept; // accepting states
-    unordered_set<char> sigma;           // finite alphabet used by the nfa
-    unordered_map<string, state> states; // [state_uid -> state...]
-    deltas_t deltas;                     // [state_uid -> deltas...]
+    unordered_map<state, synthax_cat, state::hash_function>
+        accept;                // accepting states
+    unordered_set<char> sigma; // finite alphabet used by the nfa
+    unordered_map<string, state> states;
+    unordered_map<state, unordered_map<char, state>, state::hash_function>
+        deltas;
+};
+
+// Hash set of states
+struct state_set_hash {
+    size_t
+    operator()(const unordered_set<state, state::hash_function> &s) const {
+        std::vector<std::string> names;
+        for (const auto &st : s) {
+            names.push_back(st.name);
+        }
+
+        std::sort(names.begin(), names.end());
+
+        std::string result;
+        for (const auto &name : names) {
+            result += name;
+        }
+
+        return std::hash<std::string>()(result);
+    }
+};
+
+// Compare two set of states
+struct state_set_pred {
+    bool
+    operator()(const unordered_set<state, state::hash_function> &s1,
+               const unordered_set<state, state::hash_function> &s2) const {
+        return s1 == s2;
+    }
 };
 
 string synthax_cat_to_string(synthax_cat category);
