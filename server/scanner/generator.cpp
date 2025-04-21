@@ -29,6 +29,8 @@
 #include <string.h>
 
 using std::cout, std::endl, std::vector, std::unordered_map, std::unordered_set;
+using state_set = unordered_set<state, state::hash_function>;
+using state_set_set = unordered_set<state_set, state_set_hash, state_set_pred>;
 
 namespace uuid {
 static std::random_device rd;
@@ -144,16 +146,16 @@ void initialize_nfa(nfa &n, synthax_cat accept_state_cat = unknown) {
  * e_closure - Takes a set of states, returns a set of states reacheable via
  * only epsilon transitions/closures.
  */
-unordered_set<state, state::hash_function>
-e_closure(nfa &nfa, unordered_set<state, state::hash_function> &q) {
-    unordered_set<state,state::hash_function> result;
-    unordered_set<state,state::hash_function> sub_prob_result;
+state_set e_closure(nfa &nfa, state_set &q)
+{
+    state_set result;
+    state_set sub_prob_result;
 
     result.insert(q.begin(), q.end());
     
     for(const state& s:q) {
         std::vector<string> reachables_ids = nfa.deltas.epsilon_transitions[s.name];
-        std::unordered_set<state, state::hash_function> reachables;
+        state_set reachables;
 
         for(const std::string id: reachables_ids){
             reachables.insert(nfa.states[id]);
@@ -171,13 +173,8 @@ e_closure(nfa &nfa, unordered_set<state, state::hash_function> &q) {
  * q (set of NFA states), given a char c.
  * If the input state has no transition for the given char it's ignored.
  */
-unordered_set<state,state::hash_function>
-delta_func(
-    nfa &nfa,
-    unordered_set<state, state::hash_function> &q,
-    char c
-) {
-    unordered_set<state,state::hash_function> result;
+state_set delta_func(nfa &nfa, state_set &q, char c) {
+    state_set result;
     
     for(const state s:q){
         auto it = nfa.deltas.transitions[s.name].find(c);
@@ -670,16 +667,17 @@ build_thompson_tree(const vector<string> &postfixTokens) {
 static state &normalize_dfa(
     dfa &dfa,
     unordered_map<
-        unordered_set<state, state::hash_function>,
-        unordered_map<char, unordered_set<state, state::hash_function>>,
+        state_set,
+        unordered_map<char, state_set>,
         state_set_hash, state_set_pred> &big_t,
-    unordered_set<unordered_set<state, state::hash_function>, state_set_hash,
-                  state_set_pred> &big_q,
-    unordered_set<state, state::hash_function> dfa_state_as_nfa_states,
-    unordered_map<string, synthax_cat> nfa_accepts) {
+    state_set_set &big_q,
+    state_set dfa_state,
+    unordered_map<string, synthax_cat> nfa_accepts
+) {
+
     state_set_hash hasher;
     state clean_dfa_state;
-    size_t hash = hasher(dfa_state_as_nfa_states);
+    size_t hash = hasher(dfa_state);
 
     auto it = dfa.states.find(to_string(hash));
     if (it != dfa.states.end()) {
@@ -690,7 +688,7 @@ static state &normalize_dfa(
     clean_dfa_state.name = hash;
     dfa.states[to_string(hash)] = clean_dfa_state;
 
-    auto it2 = big_t.find(dfa_state_as_nfa_states);
+    auto it2 = big_t.find(dfa_state);
     if (it2 != big_t.end()) {
         for (const auto &[ch, to] : it2->second) {
             dfa.deltas[clean_dfa_state][ch] =
@@ -700,7 +698,7 @@ static state &normalize_dfa(
 
     // If an accepting state in the set of NFA states represented by the DFA
     // state, then the DFA state is also an accepting state
-    for (const state &nfa_state : dfa_state_as_nfa_states) {
+    for (const state &nfa_state : dfa_state) {
         auto it3 = nfa_accepts.find(nfa_state.name);
         if (it3 != nfa_accepts.end()) {
             dfa.accept[clean_dfa_state] = it3->second; 
@@ -717,16 +715,12 @@ static state &normalize_dfa(
  */
 static dfa subset_construction(nfa &nfa) {
     dfa deterministic_automata;
-    unordered_set<state, state::hash_function> q0, q, n0_set, t, result;
-    unordered_set<unordered_set<state, state::hash_function>, state_set_hash,
-                  state_set_pred>
-        worklist, big_q;
+    state_set q0, q, n0_set, t, result;
+    state_set_set worklist, big_q;
 
-    unordered_map<
-        unordered_set<state, state::hash_function>,
-        unordered_map<char, unordered_set<state, state::hash_function>>,
-        state_set_hash, state_set_pred>
-        big_t;
+    unordered_map<state_set,
+        unordered_map<char, state_set>,
+        state_set_hash, state_set_pred> big_t;
 
     n0_set.insert(nfa.states[nfa.start]);
     q0 = e_closure(nfa, n0_set);

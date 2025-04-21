@@ -63,12 +63,10 @@ struct nfa {
 
 struct dfa {
     string start;
-    unordered_map<state, synthax_cat, state::hash_function>
-        accept;                // accepting states
+    unordered_map<state, synthax_cat, state::hash_function> accept;// accepting states
     unordered_set<char> sigma; // finite alphabet used by the nfa
     unordered_map<string, state> states;
-    unordered_map<state, unordered_map<char, state>, state::hash_function>
-        deltas;
+    unordered_map<state, unordered_map<char, state>, state::hash_function> deltas;
 };
 
 // Hash set of states
